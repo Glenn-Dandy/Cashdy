@@ -1,0 +1,14 @@
+Die erste Version mit allem, was im Konzept steht (außer Bankverbindung):
+
+- **Startseite:** „Noch frei“ als große Zahl, „heute X € drin“, Münz-Maskottchen mit Sprechblase und Laune, Sticker für Bargeld, Ausgaben und feste Kosten, Heute-Liste, demnächst fällig.
+- **Ausgabe in Sekunden:** großer Knopf, eigener Ziffernblock, Kategorien als Chips (meistgenutzte zuerst), Karte / Bar / PayPal, Händler wird gelernt.
+- **Fest & regelmäßig:** Fixkosten und Einnahmen mit Rhythmus (monatlich, vierteljährlich, halbjährlich, jährlich, frei), Preis-Historie mit „gilt ab“, Hinweis auf Preissteigerungen, Kündigen ab Datum, Jahreskosten als Rücklage auf die Monate verteilt.
+- **Monatsstart einstellbar:** am 1., fester Tag (mit Wochenend-Verschiebung) oder ab Gehaltseingang.
+- **Bargeld:** Portemonnaie mit Abheben, Barzahlung und Abgleich, oder Einfach-Modus.
+- **Zahlungserkennung:** liest Benachrichtigungen von DKB, PayPal, Google Wallet (weitere Banken zuschaltbar), schlägt Zahlungen mit Schnellknöpfen vor, erkennt Doppelmeldungen, PayPal-Abbuchungen der Bank und bekannte Fixkosten, optional automatisch eintragen. Rekorder zum Sammeln echter Meldungstexte.
+- **Kassenbon:** fotografieren oder aus der Galerie, Summe, Laden, Datum und Barzahlung werden offline erkannt.
+- **Kontoauszug (CSV):** DKB (alt und neu), PayPal und ähnliche Formate, findet regelmäßige Zahlungen samt Preisänderungen, überspringt Doppeltes.
+- **Monatsübersicht:** Ring nach Kategorien, Vergleich zum Vormonat, Wischen zwischen Monaten, Jahresansicht.
+- **Erinnerungen:** lange nichts eingetragen, morgen fällig, wird knapp, Monatsabschluss, „Gehalt schon da?“, sonntags Bargeld-Check.
+- **Schnellzugriff:** Homescreen-Widget, Kachel in den Schnelleinstellungen, App-Shortcuts.
+- **Sicherung:** als Datei oder per WebDAV auf die eigene Nextcloud, auf Wunsch täglich.

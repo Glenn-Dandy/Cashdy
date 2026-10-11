@@ -1,0 +1,13 @@
+Cashdy zeigt dir jeden Tag, wie viel Geld du diesen Monat noch frei hast. Ohne Bank-Login, ohne Konto-Verwaltung, ohne Fachchinesisch.
+
+• Eine große Zahl: „Noch frei“ und „heute X € drin“
+• Ausgabe in Sekunden, auch per Widget und Schnellkachel
+• Zahlungen von PayPal, DKB und Google Wallet automatisch erkennen
+• Fixkosten mit Preis-Historie, Jahreskosten auf die Monate verteilt
+• Monat ab dem 1., ab festem Tag oder ab Gehaltseingang
+• Bargeld-Portemonnaie mit Abgleich
+• Kassenbon fotografieren, Kontoauszug (CSV) einlesen
+• Freundliche Erinnerungen
+• Sicherung als Datei oder auf die eigene Nextcloud
+
+Alles bleibt auf deinem Handy.

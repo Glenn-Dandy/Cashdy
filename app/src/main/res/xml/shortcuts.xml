@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="add" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_add" android:shortcutLongLabel="@string/shortcut_add_long">
+        <intent android:action="de.kewl.cashdy.ADD" android:targetPackage="de.kewl.cashdy" android:targetClass="de.kewl.cashdy.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="cash" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_cash" android:shortcutLongLabel="@string/shortcut_cash_long">
+        <intent android:action="de.kewl.cashdy.ADD_CASH" android:targetPackage="de.kewl.cashdy" android:targetClass="de.kewl.cashdy.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="scan" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_scan" android:shortcutLongLabel="@string/shortcut_scan_long">
+        <intent android:action="de.kewl.cashdy.SCAN" android:targetPackage="de.kewl.cashdy" android:targetClass="de.kewl.cashdy.MainActivity" />
+    </shortcut>
+</shortcuts>

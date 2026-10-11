@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_desc">Zeigt, was diesen Monat noch frei ist</string>
+    <string name="tile_label">Ausgabe</string>
+    <string name="listener_label">Cashdy Zahlungserkennung</string>
+    <string name="shortcut_add">Ausgabe</string>
+    <string name="shortcut_add_long">Ausgabe eintragen</string>
+    <string name="shortcut_cash">Barzahlung</string>
+    <string name="shortcut_cash_long">Barzahlung eintragen</string>
+    <string name="shortcut_scan">Kassenbon</string>
+    <string name="shortcut_scan_long">Kassenbon fotografieren</string>
+</resources>

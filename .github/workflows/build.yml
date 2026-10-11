@@ -1,0 +1,167 @@
+name: Build APK
+
+on:
+  push:
+    branches: [dev]      # Entwicklungs-Branch → DEV-Build + rollendes Pre-Release
+    tags: ['v*']         # Tag auf main → signiertes Release
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      IS_TAG: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      IS_DEV: ${{ github.event_name == 'push' && github.ref == 'refs/heads/dev' }}
+      IS_PR: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Tags/Historie für `git describe` (versionName)
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          # Ohne diese Angabe installiert die Aktion voreingestellt `tools` — ein Paket,
+          # das Google aus dem Verzeichnis genommen hat. Seit die Laeufer die
+          # cmdline-tools 16 mitbringen, scheitert sie daran mit "Failed to find package
+          # 'tools'", noch bevor irgendetwas gebaut wird. Wir brauchen es nicht; was
+          # gebraucht wird, steht im naechsten Schritt und ist dort auf feste Fassungen
+          # festgelegt.
+          packages: platform-tools
+
+      - name: Install SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # Keystore für signierte Builds: Release (Tag) und DEV (dev-Branch) nutzen
+      # denselben Release-Key. Bei PRs nicht nötig → unsignierter Debug-Check.
+      - name: Run unit tests
+        # Läuft vor jedem Build und bei jedem PR. Prüft die Monatsrechnung, die Erkennung
+        # der Push-Meldungen, den CSV-Import und die Kassenbon-Auswertung. Fehler dort
+        # sehen in der App wie plausible Zahlen aus und fallen sonst niemandem auf.
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Restore keystore
+        if: ${{ env.IS_TAG == 'true' || env.IS_DEV == 'true' }}
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+          cat > keystore.properties <<EOF
+          storeFile=$RUNNER_TEMP/release.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      # --- Signierter Release-Build: nur bei v*-Tags (auf main) ---
+      - name: Build signed release APK
+        if: ${{ env.IS_TAG == 'true' }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Rename release APK
+        if: ${{ env.IS_TAG == 'true' }}
+        run: cp app/build/outputs/apk/release/app-release.apk "Cashdy-${{ github.ref_name }}-release.apk"
+
+      # Der Tag heisst v0.0.1, das Release soll "Cashdy 0.0.1" heissen.
+      - name: Versionsnummer ohne v
+        if: ${{ env.IS_TAG == 'true' }}
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Attach release APK to GitHub Release
+        if: ${{ env.IS_TAG == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          # Ohne name: nimmt die Aktion den Tag, und das Release hiesse "v0.0.1".
+          name: Cashdy ${{ env.VERSION }}
+          files: Cashdy-*-release.apk
+
+      # --- Rolling DEV-Build: bei Push auf den dev-Branch ---
+      # Aktualisiert das eine „dev-build"-Pre-Release → immer nur der aktuelle Dev-Build.
+      - name: Build DEV APK (release build, dev version name)
+        if: ${{ env.IS_DEV == 'true' }}
+        # Der "dev"-Typ ist ein Release-Build mit R8 und dem Release-Keystore; nur die
+        # Versionsnummer trägt die Laufnummer ("0.0.2-dev12"), damit Rückmeldungen einem
+        # konkreten Build zuzuordnen sind.
+        run: ./gradlew assembleDev --no-daemon -PdevBuild=${{ github.run_number }}
+
+      - name: Rename DEV APK
+        if: ${{ env.IS_DEV == 'true' }}
+        # Dateiname trägt die Version, damit auf dem Handy erkennbar bleibt, welcher
+        # Build im Download-Ordner liegt (statt Cashdy-dev(1).apk, (2), …).
+        run: |
+          V=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          cp app/build/outputs/apk/dev/app-dev.apk "Cashdy-$V-dev${{ github.run_number }}.apk"
+
+      - name: Remove the old dev pre-release
+        if: ${{ env.IS_DEV == 'true' }}
+        # Nicht nur die Datei, sondern den ganzen Eintrag löschen und neu anlegen lassen.
+        # GitHub sortiert die Release-Liste nach Veröffentlichungsdatum; ein bestehender
+        # Eintrag behält seines beim Überschreiben und sackt unter jedes echte Release –
+        # dann sieht niemand mehr, dass es einen neuen Dev-Build gibt. Der Tag geht mit,
+        # damit er im nächsten Schritt auf dem aktuellen Commit neu entsteht.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete dev-build -y --cleanup-tag || true
+
+      - name: Compose the dev release notes
+        if: ${{ env.IS_DEV == 'true' }}
+        # Die inhaltlichen Punkte stehen gepflegt in .github/dev-notes.md – automatisch
+        # aus den Commits erzeugt waere es unbrauchbar, weil dort auch Aenderungen
+        # auftauchen, die waehrend der Dev-Phase wieder zurueckgenommen wurden.
+        #
+        # Die Datei zaehlt auf, was **seit der letzten Veroeffentlichung** dazugekommen
+        # ist, kurz und auf Deutsch. Beim Release wandert der Inhalt in die
+        # Release-Notizen und die Datei faengt wieder von vorn an.
+        run: |
+          {
+            echo "Build ${{ github.run_number }} · \`${{ github.sha }}\` · installiert sich über Cashdy"
+            echo
+            cat .github/dev-notes.md
+          } > dev-release-notes.md
+
+      - name: Publish rolling dev pre-release
+        if: ${{ env.IS_DEV == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dev-build
+          # Ohne das legt GitHub den Tag auf dem Standard-Branch an, nicht auf dem
+          # gebauten Commit. Das Erstellungsdatum des Releases ist aber das Commit-Datum
+          # des Tags – der Eintrag landete dadurch wieder hinter dem letzten Release.
+          target_commitish: ${{ github.sha }}
+          name: Latest dev build
+          prerelease: true
+          body_path: dev-release-notes.md
+          files: Cashdy-*-dev*.apk
+
+      # --- PR-Check: unsignierter Debug-Build (nur Kompilier-Check) ---
+      - name: Build debug APK (PR check)
+        if: ${{ env.IS_PR == 'true' }}
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload debug APK artifact (PR check)
+        if: ${{ env.IS_PR == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cashdy-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Clean up secrets on runner
+        if: always()
+        run: rm -f keystore.properties "$RUNNER_TEMP/release.jks"

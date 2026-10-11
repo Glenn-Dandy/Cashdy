@@ -1,0 +1,22 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+build/
+/captures
+.externalNativeBuild
+.cxx
+.kotlin/
+local.properties
+*.apk
+*.aab
+
+# Signierung – niemals committen!
+keystore.properties
+*.jks
+*.keystore
+dev-release-notes.md
+
+
+
