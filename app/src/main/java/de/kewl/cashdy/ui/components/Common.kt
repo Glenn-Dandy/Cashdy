@@ -39,6 +39,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -154,6 +155,13 @@ fun SettingSwitch(title: String, subtitle: String? = null, checked: Boolean, onC
     }
 }
 
+/**
+ * Schrift für Zeilen in Listen, überall gleich: Nunito wie aller Text. Fredoka bleibt
+ * Überschriften und Beträgen vorbehalten.
+ */
+val RowTitle: TextStyle
+    @Composable get() = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+
 /** Weiße Fläche für zusammengehörige Zeilen, getrennt durch [GroupDivider]. */
 @Composable
 fun Group(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
@@ -174,7 +182,7 @@ fun MenuRow(title: String, subtitle: String? = null, badge: String? = null, onCl
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = C.colors.fg)
+            Text(title, style = RowTitle, color = C.colors.fg)
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = C.colors.muted)
         }
         if (badge != null) {
@@ -195,7 +203,7 @@ fun ValueRow(label: String, value: String, strong: Boolean = false, valueColor: 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(label, style = if (strong) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyLarge, color = C.colors.fg)
+            Text(label, style = if (strong) RowTitle else MaterialTheme.typography.bodyLarge, color = C.colors.fg)
             if (note != null) Text(note, style = MaterialTheme.typography.bodySmall, color = C.colors.muted)
         }
         Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = if (strong) FontWeight.SemiBold else FontWeight.Medium, color = valueColor)
@@ -247,7 +255,7 @@ fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> 
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(entryTitle(e, cat), style = MaterialTheme.typography.titleSmall, color = c.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(entryTitle(e, cat), style = RowTitle, color = c.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val sub = listOfNotNull(
                 when {
                     e.kind == EntryKind.REFUND -> "Erstattung"

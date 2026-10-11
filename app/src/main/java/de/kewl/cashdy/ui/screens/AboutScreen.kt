@@ -43,6 +43,7 @@ import de.kewl.cashdy.BuildConfig
 import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.ui.LocalUi
 import de.kewl.cashdy.ui.Route
+import de.kewl.cashdy.ui.components.RowTitle
 import de.kewl.cashdy.ui.components.BigButton
 import de.kewl.cashdy.ui.components.Mascot
 import de.kewl.cashdy.ui.components.Mood
@@ -203,7 +204,7 @@ private fun ActionRow(label: String, onClick: () -> Unit) {
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = MaterialTheme.typography.titleSmall, color = C.colors.fg, modifier = Modifier.weight(1f))
+        Text(label, style = RowTitle, color = C.colors.fg, modifier = Modifier.weight(1f))
         Box { Text("›", color = C.colors.muted, fontSize = 22.sp) }
     }
 }

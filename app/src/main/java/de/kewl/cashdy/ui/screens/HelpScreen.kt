@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import de.kewl.cashdy.ui.LocalUi
+import de.kewl.cashdy.ui.components.RowTitle
 import de.kewl.cashdy.ui.components.Group
 import de.kewl.cashdy.ui.components.GroupDivider
 import de.kewl.cashdy.ui.components.ScreenHeader
@@ -113,7 +114,7 @@ private fun Topic(title: String, expanded: Boolean, onToggle: () -> Unit, conten
             Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = c.fg, modifier = Modifier.weight(1f))
+            Text(title, style = RowTitle, color = c.fg, modifier = Modifier.weight(1f))
             Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, null, tint = c.muted)
         }
         AnimatedVisibility(expanded) {

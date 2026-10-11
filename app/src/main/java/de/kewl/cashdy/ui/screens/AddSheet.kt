@@ -20,6 +20,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.ui.components.RowTitle
 import de.kewl.cashdy.ui.components.dayLabel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -156,7 +157,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                     Box {
                         val cat = cats.firstOrNull { it.id == categoryId }
                         FieldRow("Kategorie", { catMenu = true }) {
-                            Text(cat?.let { "${it.emoji} ${it.name}" } ?: "Wählen", style = MaterialTheme.typography.titleSmall, color = if (cat == null) c.muted else c.fg, modifier = Modifier.weight(1f))
+                            Text(cat?.let { "${it.emoji} ${it.name}" } ?: "Wählen", style = RowTitle, color = if (cat == null) c.muted else c.fg, modifier = Modifier.weight(1f))
                             Icon(Icons.Rounded.KeyboardArrowDown, null, tint = c.muted)
                         }
                         DropdownMenu(catMenu, { catMenu = false }, containerColor = c.surface, modifier = Modifier.heightIn(max = 360.dp)) {
@@ -178,7 +179,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
                 }
                 FieldRow("Wann?", { pickDate = true }) {
-                    Text(dayLabel(date), style = MaterialTheme.typography.titleSmall, color = c.fg, modifier = Modifier.weight(1f))
+                    Text(dayLabel(date), style = RowTitle, color = c.fg, modifier = Modifier.weight(1f))
                     Icon(Icons.Rounded.KeyboardArrowDown, null, tint = c.muted)
                 }
                 if (kind == EntryKind.EXPENSE || kind == EntryKind.REFUND) {
@@ -297,7 +298,7 @@ private fun FieldRow(label: String, onClick: (() -> Unit)? = null, content: @Com
 @Composable
 private fun InlineField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
     val c = C.colors
-    val style = MaterialTheme.typography.titleSmall.copy(color = c.fg)
+    val style = RowTitle.copy(color = c.fg)
     BasicTextField(
         value, onChange, modifier.padding(vertical = 12.dp), singleLine = true, textStyle = style,
         cursorBrush = SolidColor(c.primary),

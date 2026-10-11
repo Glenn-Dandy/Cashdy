@@ -32,6 +32,7 @@ import de.kewl.cashdy.domain.Recurrence
 import de.kewl.cashdy.domain.Reserve
 import de.kewl.cashdy.ui.LocalUi
 import de.kewl.cashdy.ui.Route
+import de.kewl.cashdy.ui.components.RowTitle
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.Group
 import de.kewl.cashdy.ui.components.GroupDivider
@@ -127,7 +128,7 @@ private fun RecurringRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(r.name, style = MaterialTheme.typography.titleSmall, color = c.fg)
+            Text(r.name, style = RowTitle, color = c.fg)
             val parts = listOfNotNull(
                 Recurrence.intervalLabel(r.intervalMonths),
                 next?.let { "nächste ${shortDate(it)}" } ?: r.endDate?.let { "bis ${shortDate(it)}" },
@@ -146,7 +147,7 @@ private fun PotRow(p: PotStatus, onClick: () -> Unit) {
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 11.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(r.name, style = MaterialTheme.typography.titleSmall, color = c.fg)
+                Text(r.name, style = RowTitle, color = c.fg)
                 Text(
                     "${Recurrence.intervalLabel(r.intervalMonths)} ${Money.format(p.bill)} · fällig ${shortDate(p.nextDue)}",
                     style = MaterialTheme.typography.bodySmall, color = c.muted,

@@ -40,6 +40,7 @@ import de.kewl.cashdy.domain.Money
 import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.ui.AddRequest
 import de.kewl.cashdy.ui.LocalUi
+import de.kewl.cashdy.ui.components.RowTitle
 import de.kewl.cashdy.ui.components.EntryGroup
 import de.kewl.cashdy.ui.components.Group
 import de.kewl.cashdy.ui.components.GroupDivider
@@ -145,7 +146,7 @@ fun MonthScreen() {
                             .clickable { filter = if (sel) null else catId }.padding(horizontal = 16.dp, vertical = 10.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(d.category(catId)?.name ?: "Sonstiges", style = MaterialTheme.typography.titleSmall, color = c.fg, modifier = Modifier.weight(1f))
+                            Text(d.category(catId)?.name ?: "Sonstiges", style = RowTitle, color = c.fg, modifier = Modifier.weight(1f))
                             Text(Money.format(amount), style = MaterialTheme.typography.titleSmall, color = c.fg)
                         }
                         Spacer(Modifier.height(6.dp))
@@ -243,7 +244,7 @@ private fun YearView(onOpen: (Period) -> Unit) {
             val tone = when { now -> c.primary; past -> c.muted; else -> c.fg }
             Column(Modifier.fillMaxWidth().clickable { onOpen(s.period) }.padding(horizontal = 16.dp, vertical = 10.dp)) {
                 Row {
-                    Text(monthAbbr[s.period.start.plusDays(14).monthValue - 1], style = MaterialTheme.typography.titleSmall, color = tone, modifier = Modifier.weight(1.1f))
+                    Text(monthAbbr[s.period.start.plusDays(14).monthValue - 1], style = RowTitle, color = tone, modifier = Modifier.weight(1.1f))
                     Text(Money.short(s.income), style = MaterialTheme.typography.bodyMedium, color = tone, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
                     Text(Money.short(s.fixed + s.reserve), style = MaterialTheme.typography.bodyMedium, color = tone, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
                     Text(
