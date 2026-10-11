@@ -93,8 +93,12 @@ object Periods {
         }
         val start = starts[idx]
         val nextKnown = starts.getOrNull(idx + 1)
-        return if (nextKnown != null) Period(start, nextKnown.minusDays(1))
-        else Period(start, start.plusMonths(1).minusDays(1), estimatedEnd = true)
+        if (nextKnown != null) return Period(start, nextKnown.minusDays(1))
+        // Nach dem letzten bekannten Eingang: geschätzt monatlich weiter, auch weit in die
+        // Zukunft (Jahresansicht, Rücklage). Gezählt wird immer ab dem bekannten Start.
+        var k = 0L
+        while (!d.isBefore(start.plusMonths(k + 1))) k++
+        return Period(start.plusMonths(k), start.plusMonths(k + 1).minusDays(1), estimatedEnd = true)
     }
 
     /** Die letzten [n] Zeiträume bis einschließlich dem von [today], älteste zuerst. */

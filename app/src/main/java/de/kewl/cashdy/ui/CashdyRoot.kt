@@ -1,5 +1,17 @@
 package de.kewl.cashdy.ui
 
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.Repeat
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -49,6 +61,7 @@ import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.ocr.ReceiptScanner
 import de.kewl.cashdy.ui.components.Confetti
 import de.kewl.cashdy.ui.screens.AboutScreen
+import de.kewl.cashdy.ui.screens.HelpScreen
 import de.kewl.cashdy.ui.screens.AddSheet
 import de.kewl.cashdy.ui.screens.BackupScreen
 import de.kewl.cashdy.ui.screens.CategoriesScreen
@@ -87,10 +100,14 @@ fun CashdyRoot(ui: Ui) {
                         amount = info.total ?: 0, merchant = info.merchant, categoryId = info.categoryGuess,
                         method = if (info.paidCash) PayMethod.CASH else null,
                         date = info.date ?: java.time.LocalDate.now(), receiptUri = uri, fromScan = true,
+                        candidates = info.candidates,
                     )
                 )
-                if (info.total == null) ui.say("Summe nicht gefunden, bitte kurz eintippen")
-            }.onFailure { ui.say("Bon konnte nicht gelesen werden 😕") }
+                when {
+                    info.total == null -> ui.say("Summe nicht gefunden, bitte kurz eintippen")
+                    !info.sure -> ui.say("Summe bitte kurz prüfen")
+                }
+            }.onFailure { ui.say("Bon konnte nicht gelesen werden") }
         }
     }
 
@@ -144,21 +161,11 @@ fun CashdyRoot(ui: Ui) {
                         Route.Recorder -> RecorderScreen()
                         Route.Backup -> BackupScreen()
                         Route.About -> AboutScreen()
+                        Route.Help -> HelpScreen()
                     }
                 }
             }
-            if (isTab) BottomBar(route) { ui.go(it) }
-        }
-
-        if (route == Route.Home || route == Route.Month) {
-            Box(
-                Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 74.dp)
-                    .shadow(10.dp, RoundedCornerShape(50)).clip(RoundedCornerShape(50))
-                    .background(C.colors.primary).clickable { ui.openAdd() }
-                    .padding(horizontal = 30.dp, vertical = 15.dp),
-            ) {
-                Text("＋ Ausgabe", style = MaterialTheme.typography.titleLarge, color = C.colors.onPrimary)
-            }
+            if (isTab) BottomBar(route, onAdd = { ui.openAdd() }) { ui.go(it) }
         }
 
         ui.add?.let { req -> AddSheet(req, onDismiss = { ui.add = null }, onScan = { ui.add = null; ui.scanChooser = true }) }
@@ -166,7 +173,7 @@ fun CashdyRoot(ui: Ui) {
         if (ui.scanChooser) {
             AlertDialog(
                 onDismissRequest = { ui.scanChooser = false },
-                title = { Text("📸 Kassenbon") },
+                title = { Text("Kassenbon") },
                 text = { Text("Fotografier den Bon, ich lese Summe, Laden und Datum raus. Alles bleibt auf deinem Handy.") },
                 confirmButton = { TextButton(onClick = { ui.scanChooser = false; startCamera() }) { Text("Foto machen") } },
                 dismissButton = {
@@ -201,22 +208,36 @@ fun CashdyRoot(ui: Ui) {
 }
 
 @Composable
-private fun BottomBar(current: Route, onSelect: (Route) -> Unit) {
-    val items = listOf(Triple(Route.Home, "🏠", "Start"), Triple(Route.Month, "📊", "Monat"), Triple(Route.Fixed, "🔁", "Fest"), Triple(Route.More, "✨", "Mehr"))
-    Row(
-        Modifier.fillMaxWidth().background(C.colors.surface).navigationBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
-    ) {
-        items.forEach { (r, emoji, label) ->
-            val sel = r == current
-            Column(
-                Modifier.clip(RoundedCornerShape(18.dp)).background(if (sel) C.colors.soft2 else C.colors.surface)
-                    .clickable { onSelect(r) }.padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(emoji, fontSize = 20.sp)
-                Text(label, style = MaterialTheme.typography.labelMedium, color = if (sel) C.colors.fg else C.colors.muted)
+private fun BottomBar(current: Route, onAdd: () -> Unit, onSelect: (Route) -> Unit) {
+    val c = C.colors
+    @Composable
+    fun RowScope.Tab(r: Route, icon: ImageVector, label: String) {
+        val sel = r == current
+        Column(
+            Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).clickable { onSelect(r) }.padding(vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(icon, null, tint = if (sel) c.primary else c.muted, modifier = Modifier.size(24.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium, color = if (sel) c.primary else c.muted)
+        }
+    }
+    Column(Modifier.fillMaxWidth().background(c.surface)) {
+        HorizontalDivider(color = c.line)
+        Row(
+            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Tab(Route.Home, Icons.Rounded.Home, "Start")
+            Tab(Route.Month, Icons.Rounded.CalendarMonth, "Monat")
+            // Der Plus-Knopf sitzt in der Mitte und ist von jedem Tab aus erreichbar.
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.size(52.dp).shadow(6.dp, CircleShape).clip(CircleShape).background(c.primary).clickable(onClick = onAdd),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Rounded.Add, "Eintragen", tint = c.onPrimary, modifier = Modifier.size(30.dp)) }
             }
+            Tab(Route.Fixed, Icons.Rounded.Repeat, "Fest")
+            Tab(Route.More, Icons.Rounded.MoreHoriz, "Mehr")
         }
     }
 }

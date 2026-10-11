@@ -72,9 +72,9 @@ fun WalletScreen() {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Pill("🏧 Abgehoben", true, { ui.openAdd(AddRequest(kind = EntryKind.CASH_WITHDRAWAL)) })
-            Pill("💶 Bar bezahlt", false, { ui.openAdd(AddRequest(method = PayMethod.CASH)) })
-            Pill("🔍 Abgleich", false, { check = true })
+            Pill("Abgehoben", true, { ui.openAdd(AddRequest(kind = EntryKind.CASH_WITHDRAWAL)) })
+            Pill("Bar bezahlt", false, { ui.openAdd(AddRequest(method = PayMethod.CASH)) })
+            Pill("Abgleich", false, { check = true })
         }
         Hint("Abheben ist keine Ausgabe, das Geld wandert nur ins Portemonnaie. Ausgegeben ist es erst, wenn du bar bezahlst. Keine Lust, jeden Kaugummi einzutragen? Mach ab und zu einen Abgleich, den Rest buche ich als „Bargeld, nicht zugeordnet“.")
 
@@ -93,7 +93,7 @@ fun WalletScreen() {
         var real by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { check = false },
-            title = { Text("💶 Wie viel hast du gerade?") },
+            title = { Text("Wie viel hast du gerade?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Zähl kurz nach. Laut mir sind es ${Money.format(wallet)}.")
@@ -114,7 +114,7 @@ fun WalletScreen() {
                         }
                         CashdyWidget.updateAll(ctx)
                     }
-                    ui.say(if (diff == 0L) "Passt auf den Cent! 🎯" else if (diff > 0) "${Money.format(diff)} als Bargeld-Ausgabe gebucht" else "${Money.format(-diff)} mehr, schön!")
+                    ui.say(if (diff == 0L) "Passt auf den Cent!" else if (diff > 0) "${Money.format(diff)} als Bargeld-Ausgabe gebucht" else "${Money.format(-diff)} mehr, schön!")
                     check = false
                 }) { Text("Abgleichen") }
             },

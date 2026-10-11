@@ -79,7 +79,7 @@ fun InboxScreen(focusId: String?) {
             done.forEach { det ->
                 Row(Modifier.padding(horizontal = 6.dp)) {
                     Text(
-                        "${statusEmoji(det.status)} ${det.merchant.ifBlank { det.sourceName }} · ${Money.format(det.amount)}",
+                        "${det.merchant.ifBlank { det.sourceName }} · ${Money.format(det.amount)} · ${statusLabel(det.status)}",
                         style = MaterialTheme.typography.bodyMedium, color = c.fg, modifier = Modifier.weight(1f),
                     )
                     Text(dayLabel(Detection.dayOf(det)), style = MaterialTheme.typography.bodySmall, color = c.muted)
@@ -91,11 +91,11 @@ fun InboxScreen(focusId: String?) {
     }
 }
 
-private fun statusEmoji(s: DetectedStatus) = when (s) {
-    DetectedStatus.ACCEPTED -> "✅"
-    DetectedStatus.IGNORED -> "🙈"
-    DetectedStatus.MERGED -> "🔗"
-    DetectedStatus.PENDING -> "⏳"
+private fun statusLabel(s: DetectedStatus) = when (s) {
+    DetectedStatus.ACCEPTED -> "eingetragen"
+    DetectedStatus.IGNORED -> "ignoriert"
+    DetectedStatus.MERGED -> "schon da"
+    DetectedStatus.PENDING -> "offen"
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -119,9 +119,9 @@ private fun DetectedCard(det: Detected, expanded: Boolean) {
             Column(Modifier.weight(1f)) {
                 Text(
                     when (det.kind) {
-                        DetectedKind.EXPENSE -> "💳 ${det.merchant.ifBlank { "Zahlung" }}"
-                        DetectedKind.CASH -> "🏧 Geld abgehoben"
-                        DetectedKind.INCOME -> "💰 Eingang" + if (det.merchant.isNotBlank()) " von ${det.merchant}" else ""
+                        DetectedKind.EXPENSE -> "${det.merchant.ifBlank { "Zahlung" }}"
+                        DetectedKind.CASH -> "Geld abgehoben"
+                        DetectedKind.INCOME -> "Eingang" + if (det.merchant.isNotBlank()) " von ${det.merchant}" else ""
                         DetectedKind.REFUND -> "↩️ Erstattung ${det.merchant}"
                     },
                     style = MaterialTheme.typography.titleMedium, color = c.fg,
@@ -152,13 +152,13 @@ private fun DetectedCard(det: Detected, expanded: Boolean) {
                 }
             }
             DetectedKind.CASH -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Pill("💶 Ins Portemonnaie", true, { Store.update { Detection.accept(it, det.id, null, true).first }; done("Ins Portemonnaie gesteckt") })
+                Pill("Ins Portemonnaie", true, { Store.update { Detection.accept(it, det.id, null, true).first }; done("Ins Portemonnaie gesteckt") })
                 Pill("War eine Ausgabe", false, { Store.update { Detection.accept(it, det.id, null, false).first }; done("Als Ausgabe eingetragen") })
             }
             DetectedKind.INCOME -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (d.settings.periodMode == PeriodMode.INCOME) Pill("💰 Gehalt, neuer Monat", true, {
+                if (d.settings.periodMode == PeriodMode.INCOME) Pill("Gehalt, neuer Monat", true, {
                     Store.update { data -> Salary.startNewPeriod(Detection.ignore(data, det.id).let { x -> x.copy(detected = x.detected.map { if (it.id == det.id) it.copy(status = DetectedStatus.ACCEPTED) else it }) }, Detection.dayOf(det), det.amount) }
-                    done("Neuer Monat gestartet 🎉")
+                    done("Neuer Monat gestartet")
                 })
                 Pill("Einnahme", d.settings.periodMode != PeriodMode.INCOME, { Store.update { Detection.accept(it, det.id, null).first }; done("Als Einnahme eingetragen") })
             }

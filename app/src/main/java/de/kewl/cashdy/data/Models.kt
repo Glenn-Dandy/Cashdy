@@ -160,6 +160,11 @@ data class Settings(
     val devUpdates: Boolean = false,
     /** Zeiträume, deren Plus schon mit Konfetti gefeiert wurde. */
     val celebrated: Set<String> = emptySet(),
+    /**
+     * Ab hier wird für verteilte Kosten zurückgelegt. Davor gab es den Topf noch nicht, eine
+     * Rechnung im ersten Durchlauf ist also nur teilweise angespart. Leer = schon immer.
+     */
+    val potStart: Day? = null,
 ) {
     companion object {
         val DEFAULT_WATCHED = setOf(

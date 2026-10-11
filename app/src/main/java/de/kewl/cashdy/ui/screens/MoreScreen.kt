@@ -24,6 +24,8 @@ import de.kewl.cashdy.domain.Budget
 import de.kewl.cashdy.domain.Money
 import de.kewl.cashdy.ui.LocalUi
 import de.kewl.cashdy.ui.Route
+import de.kewl.cashdy.ui.components.Group
+import de.kewl.cashdy.ui.components.GroupDivider
 import de.kewl.cashdy.ui.components.MenuRow
 import de.kewl.cashdy.ui.components.SectionTitle
 import de.kewl.cashdy.ui.theme.C
@@ -40,17 +42,35 @@ fun MoreScreen() {
     ) {
         Spacer(Modifier.height(8.dp))
         Text("Mehr", style = MaterialTheme.typography.headlineMedium, color = C.colors.fg)
-        if (d.settings.cashMode == CashMode.WALLET) MenuRow("💶", "Portemonnaie", "Gerade ${Money.format(Budget.wallet(d))}") { ui.go(Route.Wallet) }
-        MenuRow("📬", "Erkannte Zahlungen", if (pending > 0) "$pending warten auf dich" else "Alles erledigt", badge = pending.takeIf { it > 0 }?.toString()) { ui.go(Route.Inbox()) }
-        MenuRow("📸", "Kassenbon scannen", "Summe und Laden automatisch auslesen") { ui.scanChooser = true }
-        MenuRow("📄", "Kontoauszug importieren", "CSV von DKB, PayPal & Co.") { ui.go(Route.Import()) }
+        Group {
+            MenuRow("Erkannte Zahlungen", if (pending > 0) "$pending warten auf dich" else "Alles erledigt", badge = pending.takeIf { it > 0 }?.toString()) { ui.go(Route.Inbox()) }
+            if (d.settings.cashMode == CashMode.WALLET) {
+                GroupDivider()
+                MenuRow("Portemonnaie", "Gerade ${Money.format(Budget.wallet(d))}") { ui.go(Route.Wallet) }
+            }
+            GroupDivider()
+            MenuRow("Kassenbon scannen", "Summe und Laden automatisch auslesen") { ui.scanChooser = true }
+            GroupDivider()
+            MenuRow("Kontoauszug importieren", "CSV von DKB, PayPal & Co.") { ui.go(Route.Import()) }
+        }
 
         SectionTitle("Einstellungen")
-        MenuRow("⚙️", "Allgemein", "Monatsstart, Bargeld, Erinnerungen") { ui.go(Route.Settings) }
-        MenuRow("✨", "Zahlungserkennung", if (PaymentListenerService.isEnabled(ctx)) "Aktiv" else "Aus") { ui.go(Route.Detection) }
-        MenuRow("🏷️", "Kategorien") { ui.go(Route.Categories) }
-        MenuRow("☁️", "Sicherung", "Datei oder Nextcloud") { ui.go(Route.Backup) }
-        MenuRow("🪙", "Über Cashdy") { ui.go(Route.About) }
+        Group {
+            MenuRow("Allgemein", "Monatsstart, Bargeld, Erinnerungen") { ui.go(Route.Settings) }
+            GroupDivider()
+            MenuRow("Zahlungserkennung", if (PaymentListenerService.isEnabled(ctx)) "Aktiv" else "Aus") { ui.go(Route.Detection) }
+            GroupDivider()
+            MenuRow("Kategorien") { ui.go(Route.Categories) }
+            GroupDivider()
+            MenuRow("Sicherung", "Als Datei oder auf deinen Server") { ui.go(Route.Backup) }
+        }
+
+        SectionTitle("Hilfe")
+        Group {
+            MenuRow("Hilfe", "Erkennung einschalten, Rücklage, Bargeld, Kassenbon") { ui.go(Route.Help) }
+            GroupDivider()
+            MenuRow("Über Cashdy", "Version, Feedback, Updates") { ui.go(Route.About) }
+        }
         Spacer(Modifier.height(40.dp))
     }
 }

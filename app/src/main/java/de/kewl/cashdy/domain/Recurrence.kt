@@ -5,7 +5,11 @@ import de.kewl.cashdy.data.PriceStep
 import de.kewl.cashdy.data.Recurring
 import java.time.LocalDate
 
-data class Occurrence(val recurring: Recurring, val date: LocalDate, val amount: Cents)
+/**
+ * Eine Zahlung in einem Zeitraum. Bei verteilten Kosten ist [fromPot] der Teil der Rechnung,
+ * den die Rücklage bezahlt, und [amount] nur der Rest, der den Monat belastet.
+ */
+data class Occurrence(val recurring: Recurring, val date: LocalDate, val amount: Cents, val fromPot: Cents = 0)
 
 object Recurrence {
 

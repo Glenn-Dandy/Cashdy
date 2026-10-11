@@ -58,7 +58,7 @@ fun BackupScreen() {
 
     val create = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) scope.launch {
-            Backup.exportTo(ctx, uri).onSuccess { ui.say("Gesichert ✓") }.onFailure { ui.say("Hat nicht geklappt: ${it.message}") }
+            Backup.exportTo(ctx, uri).onSuccess { ui.say("Gesichert") }.onFailure { ui.say("Hat nicht geklappt: ${it.message}") }
         }
     }
     val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -74,13 +74,13 @@ fun BackupScreen() {
         ScreenHeader("Sicherung", onBack = { ui.back() })
         Hint("Deine Daten liegen nur auf diesem Handy. Mach ab und zu eine Sicherung, damit beim Handywechsel nichts verloren geht. Kassenbon-Fotos sind nicht enthalten.")
 
-        SectionTitle("📁 Als Datei")
+        SectionTitle("Als Datei")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill("Sichern", true, { create.launch("cashdy-${java.time.LocalDate.now()}.json") })
             Pill("Wiederherstellen", false, { open.launch(arrayOf("application/json", "*/*")) })
         }
 
-        SectionTitle("☁️ Nextcloud / WebDAV")
+        SectionTitle("Nextcloud / WebDAV")
         Card {
             var url by remember { mutableStateOf(s.webdavUrl) }
             var user by remember { mutableStateOf(s.webdavUser) }
@@ -96,13 +96,13 @@ fun BackupScreen() {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Pill(if (busy) "…" else "Jetzt sichern", true, {
                     if (!busy) { busy = true; scope.launch {
-                        Backup.uploadWebDav().onSuccess { ui.say("In der Nextcloud gesichert ✓") }.onFailure { ui.say("😕 ${it.message}") }
+                        Backup.uploadWebDav().onSuccess { ui.say("Gesichert") }.onFailure { ui.say(it.message ?: "Hat nicht geklappt") }
                         busy = false
                     } }
                 })
                 Pill("Von dort holen", false, {
                     if (!busy) { busy = true; scope.launch {
-                        Backup.downloadWebDav().onSuccess { restoreCandidate = it }.onFailure { ui.say("😕 ${it.message}") }
+                        Backup.downloadWebDav().onSuccess { restoreCandidate = it }.onFailure { ui.say(it.message ?: "Hat nicht geklappt") }
                         busy = false
                     } }
                 })
@@ -119,7 +119,7 @@ fun BackupScreen() {
             title = { Text("Sicherung einspielen?") },
             text = { Text("Darin: ${cand.entries.size} Einträge, ${cand.recurring.size} regelmäßige Posten. Das ersetzt alles, was gerade in der App ist.", style = MaterialTheme.typography.bodyMedium) },
             confirmButton = { TextButton(onClick = {
-                Backup.restore(cand); restoreCandidate = null; CashdyWidget.updateAll(ctx); ui.say("Wiederhergestellt ✓")
+                Backup.restore(cand); restoreCandidate = null; CashdyWidget.updateAll(ctx); ui.say("Wiederhergestellt")
             }) { Text("Ersetzen", color = c.warn) } },
             dismissButton = { TextButton(onClick = { restoreCandidate = null }) { Text("Abbrechen") } },
         )

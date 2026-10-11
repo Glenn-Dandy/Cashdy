@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -66,23 +66,6 @@ fun Card(modifier: Modifier = Modifier, color: Color = C.colors.surface, radius:
             .padding(14.dp),
         content = content,
     )
-}
-
-@Composable
-fun Sticker(emoji: String, value: String, label: String, color: Color, tilt: Float, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
-    Column(
-        modifier
-            .rotate(tilt)
-            .clip(RoundedCornerShape(24.dp))
-            .background(color)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(vertical = 12.dp, horizontal = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(emoji, fontSize = 26.sp)
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = C.colors.fg, maxLines = 1)
-        Text(label, style = MaterialTheme.typography.bodySmall, color = C.colors.muted, maxLines = 1)
-    }
 }
 
 @Composable
@@ -143,7 +126,7 @@ fun ScreenHeader(title: String, onBack: (() -> Unit)? = null, action: @Composabl
 
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier.padding(start = 4.dp, top = 6.dp, bottom = 2.dp), style = MaterialTheme.typography.titleMedium, color = C.colors.fg)
+    Text(text, modifier.padding(start = 6.dp, top = 8.dp), style = MaterialTheme.typography.titleSmall, color = C.colors.muted)
 }
 
 @Composable
@@ -171,14 +154,25 @@ fun SettingSwitch(title: String, subtitle: String? = null, checked: Boolean, onC
     }
 }
 
+/** Weiße Fläche für zusammengehörige Zeilen, getrennt durch [GroupDivider]. */
 @Composable
-fun MenuRow(emoji: String, title: String, subtitle: String? = null, badge: String? = null, onClick: () -> Unit) {
+fun Group(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(C.colors.surface), content = content)
+}
+
+@Composable
+fun GroupDivider() {
+    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = C.colors.line)
+}
+
+/** Zeile in einer [Group]: Titel, optional Untertitel und Zähler, Pfeil nach rechts. */
+@Composable
+fun MenuRow(title: String, subtitle: String? = null, badge: String? = null, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(C.colors.surface).clickable(onClick = onClick).padding(12.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        EmojiBubble(emoji, C.colors.soft2)
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall, color = C.colors.fg)
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = C.colors.muted)
@@ -192,7 +186,21 @@ fun MenuRow(emoji: String, title: String, subtitle: String? = null, badge: Strin
     }
 }
 
-fun softFor(index: Int, c: de.kewl.cashdy.ui.theme.CashdyColors) = when (index % 3) { 0 -> c.soft1; 1 -> c.soft2; else -> c.soft3 }
+/** Beschriftung links, Betrag rechts: für die kleinen Rechnungen auf Start und Monat. */
+@Composable
+fun ValueRow(label: String, value: String, strong: Boolean = false, valueColor: Color = C.colors.fg, note: String? = null, onClick: (() -> Unit)? = null) {
+    Row(
+        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = if (strong) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyLarge, color = C.colors.fg)
+            if (note != null) Text(note, style = MaterialTheme.typography.bodySmall, color = C.colors.muted)
+        }
+        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = if (strong) FontWeight.SemiBold else FontWeight.Medium, color = valueColor)
+    }
+}
 
 fun categoryTint(cat: Category?, dark: Boolean): Color {
     val base = Color(cat?.color ?: 0xFFC3BED6)
@@ -210,6 +218,16 @@ fun dayLabel(d: LocalDate, today: LocalDate = LocalDate.now()): String = when (d
 
 fun shortDate(d: LocalDate): String = d.format(shortFmt)
 
+private val weekdayFmt = DateTimeFormatter.ofPattern("EEE", Locale.GERMAN)
+
+/** "heute", "gestern", "Do" oder "3.10." für Zeilen in Listen. */
+fun shortDay(d: LocalDate, today: LocalDate = LocalDate.now()): String = when {
+    d == today -> "heute"
+    d == today.minusDays(1) -> "gestern"
+    d.isAfter(today.minusDays(7)) -> d.format(weekdayFmt).trimEnd('.')
+    else -> d.format(DateTimeFormatter.ofPattern("d.M."))
+}
+
 fun entryTitle(e: Entry, cat: Category?): String = when (e.kind) {
     EntryKind.CASH_WITHDRAWAL -> "Geld abgehoben"
     EntryKind.CASH_ADJUST -> "Bargeld-Abgleich"
@@ -217,37 +235,27 @@ fun entryTitle(e: Entry, cat: Category?): String = when (e.kind) {
     else -> e.merchant.ifBlank { cat?.name ?: "Ausgabe" }
 }
 
-fun entryEmoji(e: Entry, cat: Category?): String = when (e.kind) {
-    EntryKind.CASH_WITHDRAWAL -> "🏧"
-    EntryKind.CASH_ADJUST, EntryKind.CASH_START -> "💶"
-    EntryKind.REFUND -> "↩️"
-    else -> cat?.emoji ?: "✨"
-}
-
-fun methodLabel(m: PayMethod) = when (m) {
-    PayMethod.CARD -> "💳 Karte"
-    PayMethod.PAYPAL -> "🅿️ PayPal"
-    PayMethod.CASH -> "💶 Bar"
-    PayMethod.TRANSFER -> "🏦 Überweisung"
-}
-
+/** Ein Eintrag als Zeile in einer [Group]: Händler, darunter Kategorie, rechts der Betrag. */
 @Composable
-fun EntryRow(e: Entry, cat: Category?, onClick: () -> Unit) {
+fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> Unit) {
     val c = C.colors
     val positive = e.kind == EntryKind.INCOME || e.kind == EntryKind.REFUND
     val neutral = e.kind == EntryKind.CASH_WITHDRAWAL || e.kind == EntryKind.CASH_START
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surface).clickable(onClick = onClick)
-            .padding(start = 8.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        EmojiBubble(entryEmoji(e, cat), categoryTint(cat, c.dark), 38.dp)
         Column(Modifier.weight(1f)) {
             Text(entryTitle(e, cat), style = MaterialTheme.typography.titleSmall, color = c.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val sub = listOfNotNull(
-                cat?.name?.takeIf { e.merchant.isNotBlank() && e.kind == EntryKind.EXPENSE },
+                when {
+                    e.kind == EntryKind.REFUND -> "Erstattung"
+                    e.merchant.isNotBlank() && (e.kind == EntryKind.EXPENSE || e.kind == EntryKind.INCOME) -> cat?.name
+                    else -> null
+                },
                 if (e.method == PayMethod.CASH && e.kind == EntryKind.EXPENSE) "bar" else null,
+                if (showDay) shortDay(e.date) else null,
                 e.note.ifBlank { null },
             ).joinToString(" · ")
             if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.bodySmall, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -255,13 +263,23 @@ fun EntryRow(e: Entry, cat: Category?, onClick: () -> Unit) {
         Text(
             when {
                 positive -> "+" + Money.format(e.amount)
-                neutral -> Money.format(e.amount)
                 e.kind == EntryKind.CASH_ADJUST && e.amount < 0 -> "+" + Money.format(-e.amount)
                 else -> Money.format(e.amount)
             },
             style = MaterialTheme.typography.titleSmall,
             color = if (positive) c.good else if (neutral) c.muted else c.fg,
         )
+    }
+}
+
+/** Mehrere Einträge in einer Gruppe, mit Trennlinien. */
+@Composable
+fun EntryGroup(entries: List<Entry>, categories: (String?) -> Category?, showDay: Boolean = false, onClick: (Entry) -> Unit) {
+    Group {
+        entries.forEachIndexed { i, e ->
+            if (i > 0) GroupDivider()
+            EntryRow(e, categories(e.categoryId), showDay) { onClick(e) }
+        }
     }
 }
 

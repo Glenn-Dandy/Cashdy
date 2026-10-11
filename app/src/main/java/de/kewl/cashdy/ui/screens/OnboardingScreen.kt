@@ -57,6 +57,8 @@ import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.notify.Notify
 import de.kewl.cashdy.ui.components.BigButton
 import de.kewl.cashdy.ui.components.Card
+import de.kewl.cashdy.ui.components.DateChip
+import de.kewl.cashdy.ui.components.DatePick
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.Mascot
 import de.kewl.cashdy.ui.components.MoneyField
@@ -69,7 +71,7 @@ import de.kewl.cashdy.ui.theme.C
 import de.kewl.cashdy.widget.CashdyWidget
 import java.time.LocalDate
 
-private data class QuickFixed(val name: String, val cat: String, val months: Int, val amount: Long)
+private data class QuickFixed(val name: String, val cat: String, val months: Int, val amount: Long, val due: LocalDate)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -104,7 +106,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
             fixed.forEach { f ->
                 rec += Recurring(
                     id = Store.newId(), name = f.name, categoryId = f.cat, intervalMonths = f.months,
-                    firstDue = today.withDayOfMonth(1), spread = f.months > 1, prices = listOf(PriceStep(today.withDayOfMonth(1), f.amount)),
+                    firstDue = f.due, spread = f.months > 1, prices = listOf(PriceStep(f.due, f.amount)),
                 )
             }
             val lastSalaryDay = Periods.startInMonth(today, salaryDay, false).let { if (it.isAfter(today)) Periods.startInMonth(today.minusMonths(1), salaryDay, false) else it }
@@ -117,6 +119,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                 settings = d.settings.copy(
                     onboarded = true, name = name.trim(), periodMode = mode, periodDay = if (mode == PeriodMode.CALENDAR) 1 else salaryDay,
                     periodStarts = if (mode == PeriodMode.INCOME) listOf(lastSalaryDay) else emptyList(), cashMode = cashMode,
+                    potStart = today,
                 ),
             )
         }
@@ -241,6 +244,9 @@ fun OnboardingScreen(onDone: () -> Unit) {
     askFixed?.let { (n, cat, m) ->
         var amount by remember(n) { mutableStateOf(if (n == "Rundfunkbeitrag") "55,08" else "") }
         var title by remember(n) { mutableStateOf(n) }
+        var due by remember(n) { mutableStateOf(LocalDate.now().let { if (m == 1) it.withDayOfMonth(1) else it.plusMonths(1).withDayOfMonth(1) }) }
+        var pickDue by remember(n) { mutableStateOf(false) }
+        if (pickDue) DatePick(due, { pickDue = false }) { due = it }
         AlertDialog(
             onDismissRequest = { askFixed = null },
             title = { Text(if (n.isBlank()) "Eigene Fixkosten" else n) },
@@ -248,12 +254,16 @@ fun OnboardingScreen(onDone: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (n.isBlank()) SoftField(title, { title = it }, "Name")
                     MoneyField(amount, { amount = it }, if (m == 1) "Betrag pro Monat (€)" else if (m == 12) "Betrag pro Jahr (€)" else "Betrag alle $m Monate (€)")
+                    if (m > 1) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Nächste Abbuchung", style = MaterialTheme.typography.bodyMedium, color = c.muted, modifier = Modifier.weight(1f))
+                        DateChip(due, { pickDue = true })
+                    }
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
                     val a = Money.parse(amount)
-                    if (a != null && a > 0 && title.isNotBlank()) { fixed += QuickFixed(title.trim(), cat, m, a); askFixed = null }
+                    if (a != null && a > 0 && title.isNotBlank()) { fixed += QuickFixed(title.trim(), cat, m, a, due); askFixed = null }
                 }) { Text("Hinzufügen") }
             },
             dismissButton = { TextButton(onClick = { askFixed = null }) { Text("Abbrechen") } },

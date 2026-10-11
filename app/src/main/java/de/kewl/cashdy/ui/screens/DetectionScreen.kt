@@ -40,6 +40,7 @@ import de.kewl.cashdy.domain.Money
 import de.kewl.cashdy.ui.LocalUi
 import de.kewl.cashdy.ui.Route
 import de.kewl.cashdy.ui.components.Card
+import de.kewl.cashdy.ui.components.Group
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.MenuRow
 import de.kewl.cashdy.ui.components.ScreenHeader
@@ -83,13 +84,17 @@ fun DetectionScreen() {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         ScreenHeader("Zahlungserkennung", onBack = { ui.back() })
-        Card(color = if (enabled) c.soft3 else c.soft1) {
-            Text(if (enabled) "✅ Aktiv" else "⏸️ Aus", style = MaterialTheme.typography.titleMedium, color = c.fg)
+        Card(color = if (enabled) c.surface else c.soft1) {
+            Text(if (enabled) "Aktiv" else "Aus", style = MaterialTheme.typography.titleMedium, color = c.fg)
             Hint(
                 if (enabled) "Ich lese nur die Benachrichtigungen der Apps unten. Alles andere ignoriere ich sofort. Nichts verlässt dein Handy."
-                else "Erlaube mir den Zugriff auf Benachrichtigungen. Dann schlage ich dir Zahlungen von PayPal, DKB & Co. direkt vor."
+                else "Erlaube mir den Zugriff auf Benachrichtigungen. Dann schlage ich dir Zahlungen von PayPal, DKB & Co. direkt vor. " +
+                    "Lässt sich der Schalter nicht umlegen? Das ist ein Schutz von Android, die Hilfe zeigt in drei Schritten, wie es geht."
             )
-            TextButtonSoft(if (enabled) "Systemeinstellung öffnen" else "Einschalten", { openListenerSettings(ctx) })
+            Row {
+                TextButtonSoft(if (enabled) "Systemeinstellung öffnen" else "Einschalten", { openListenerSettings(ctx) })
+                if (!enabled) TextButtonSoft("So geht's", { ui.go(Route.Help) })
+            }
         }
 
         SettingSwitch(
@@ -106,14 +111,16 @@ fun DetectionScreen() {
             }
         }
 
-        MenuRow("🎙️", "Rekorder", if (s.recorder) "Läuft, ${d.recorded.size} Meldungen" else "Benachrichtigungstexte sammeln, um neue Banken einzubauen") { ui.go(Route.Recorder) }
+        Group {
+            MenuRow("Rekorder", if (s.recorder) "Läuft, ${d.recorded.size} Meldungen" else "Benachrichtigungstexte sammeln, um neue Banken einzubauen") { ui.go(Route.Recorder) }
+        }
 
         SectionTitle("Ausprobieren")
         var test by remember { mutableStateOf("Du hast eine Zahlung in Höhe von 12,49 € an REWE autorisiert.") }
         SoftField(test, { test = it }, "Text einer Benachrichtigung", singleLine = false)
         val parsed = NotificationParser.parse("com.paypal.android.p2pmobile", "", test)
         Card(Modifier.fillMaxWidth()) {
-            if (parsed == null) Text("🤷 Keine Zahlung erkannt", color = c.fg)
+            if (parsed == null) Text("Keine Zahlung erkannt", color = c.fg)
             else {
                 Text(
                     kindLabel(parsed.kind) +
@@ -144,12 +151,12 @@ fun RecorderScreen() {
         Hint("Der Rekorder merkt sich alle Benachrichtigungen mit einem Geldbetrag, egal von welcher App. So sehen wir, wie deine Bank ihre Meldungen formuliert, und können sie einbauen. Höchstens 200 Meldungen, nur auf diesem Handy.")
         SettingSwitch("Rekorder an", null, s.recorder) { v -> setSettings { it.copy(recorder = v) } }
         if (d.recorded.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButtonSoft("📋 Alles kopieren", {
+            TextButtonSoft("Alles kopieren", {
                 val text = d.recorded.joinToString("\n\n") { "[${it.pkg}] ${it.title}\n${it.text}" }
                 (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Cashdy Rekorder", text))
                 ui.say("Kopiert")
             })
-            TextButtonSoft("🗑️ Leeren", { Store.update { it.copy(recorded = emptyList()) } })
+            TextButtonSoft("Leeren", { Store.update { it.copy(recorded = emptyList()) } })
         }
         d.recorded.forEach { r ->
             Card {
@@ -169,8 +176,8 @@ fun RecorderScreen() {
 }
 
 private fun kindLabel(k: DetectedKind) = when (k) {
-    DetectedKind.EXPENSE -> "💳 Ausgabe"
-    DetectedKind.CASH -> "🏧 Bargeld"
-    DetectedKind.INCOME -> "💰 Eingang"
-    DetectedKind.REFUND -> "↩️ Erstattung"
+    DetectedKind.EXPENSE -> "Ausgabe"
+    DetectedKind.CASH -> "Bargeld"
+    DetectedKind.INCOME -> "Eingang"
+    DetectedKind.REFUND -> "Erstattung"
 }

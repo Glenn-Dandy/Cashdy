@@ -26,9 +26,15 @@ data class Summary(
     val fixedItems: List<Occurrence>,
     val reserveItems: List<Occurrence>,
     val entries: List<Entry>,
+    /** Rechnungen verteilter Kosten, die in diesem Zeitraum fällig sind (voller Betrag, Anteil aus dem Topf). */
+    val potBills: List<Occurrence>,
     /** Ausgaben nach Kategorie, inklusive fester Kosten und Rücklagen. */
     val byCategory: List<CategorySum>,
 )
+
+data class YearPlan(val year: Int, val months: List<Summary>, val fixedTotal: Cents) {
+    val fixedPerMonth: Cents get() = fixedTotal / 12
+}
 
 object Budget {
 
@@ -49,14 +55,21 @@ object Budget {
         val incomeItems = mutableListOf<Occurrence>()
         val fixedItems = mutableListOf<Occurrence>()
         val reserveItems = mutableListOf<Occurrence>()
+        val potBills = mutableListOf<Occurrence>()
 
         for (r in d.recurring) {
             if (r.income) {
                 incomeItems += incomeOccurrences(r, p, s.periodMode)
             } else if (r.spread && r.intervalMonths > 1) {
-                if (Recurrence.spreadActive(r, p)) {
-                    val share = r.overrides[p.key] ?: Recurrence.monthlyShare(r, p.start)
-                    reserveItems += Occurrence(r, p.start, share)
+                val share = Reserve.shareIn(d, r, p)
+                if (share > 0) reserveItems += Occurrence(r, p.start, share)
+                for (due in Recurrence.dueDates(r, p.start, p.end)) {
+                    val bill = Recurrence.priceAt(r, due)
+                    val saved = minOf(Reserve.savedFor(d, r, due), bill)
+                    potBills += Occurrence(r, due, bill, saved)
+                    // Reicht der Topf nicht (erster Durchlauf, Preis gestiegen), zahlt der Monat den Rest.
+                    // Ein paar Cent Rundungsrest durch das Teilen bleiben unter dem Tisch.
+                    if (bill - saved > r.intervalMonths) fixedItems += Occurrence(r, due, bill - saved, saved)
                 }
             } else {
                 for (due in Recurrence.dueDates(r, p.start, p.end)) {
@@ -94,7 +107,7 @@ object Budget {
         val byCategory = cat.filter { it.value > 0 }.map { CategorySum(it.key, it.value) }.sortedByDescending { it.amount }
 
         return Summary(p, income, fixed, reserve, spent, free, perDay, daysLeft,
-            incomeItems, fixedItems, reserveItems, entries, byCategory)
+            incomeItems, fixedItems, reserveItems, entries, potBills, byCategory)
     }
 
     /**
@@ -109,6 +122,19 @@ object Budget {
             return listOf(Occurrence(r, p.start, r.overrides[p.key] ?: Recurrence.priceAt(r, p.start)))
         }
         return Recurrence.dueDates(r, p.start, p.end).map { Occurrence(r, it, r.overrides[p.key] ?: Recurrence.priceAt(r, it)) }
+    }
+
+    /** Die zwölf Zeiträume, deren Mitte im Jahr [year] liegt, und was dort fest abgeht. */
+    fun year(d: AppData, year: Int, today: LocalDate = LocalDate.now()): YearPlan {
+        val periods = mutableListOf<Period>()
+        var p = Periods.periodFor(LocalDate.of(year, 1, 15), d.settings)
+        repeat(12) { periods += p; p = Periods.next(p, d.settings) }
+        val sums = periods.map { summary(d, it, today) }
+        // Echte Jahreskosten: jede Rechnung voll, egal ob verteilt oder nicht.
+        val from = periods.first().start
+        val to = periods.last().end
+        val bills = d.recurring.filter { !it.income }.sumOf { r -> Recurrence.dueDates(r, from, to).sumOf { Recurrence.priceAt(r, it) } }
+        return YearPlan(year, sums, bills)
     }
 
     /** Bargeld laut App. */

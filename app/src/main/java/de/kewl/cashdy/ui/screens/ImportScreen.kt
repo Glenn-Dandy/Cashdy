@@ -125,8 +125,8 @@ fun ImportScreen(initial: Uri?) {
                     Hint("3. Ich finde regelmäßige Zahlungen (Miete, Netflix, Gehalt) und schlage sie als Fixkosten vor. Einzelne Ausgaben kannst du mit übernehmen.")
                 }
                 Spacer(Modifier.height(12.dp))
-                BigButton("📄 CSV-Datei wählen", { picker.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "*/*")) }, Modifier.fillMaxWidth())
-                error?.let { Text("😕 $it", color = c.warn, modifier = Modifier.padding(top = 10.dp)) }
+                BigButton("CSV-Datei wählen", { picker.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "*/*")) }, Modifier.fillMaxWidth())
+                error?.let { Text(it, color = c.warn, modifier = Modifier.padding(top = 10.dp)) }
             }
             return@LazyColumn
         }
@@ -138,7 +138,7 @@ fun ImportScreen(initial: Uri?) {
             }
         }
         if (suggestions.isNotEmpty()) {
-            item { SectionTitle("🔁 Regelmäßig gefunden (${suggestions.size})") }
+            item { SectionTitle("Regelmäßig gefunden (${suggestions.size})") }
             items(suggestions, key = { it.recurring.id }) { s ->
                 val r = s.recurring
                 val on = pickedSugg[r.id] == true
@@ -200,7 +200,7 @@ fun ImportScreen(initial: Uri?) {
                     data.copy(recurring = cleaned + newRec, entries = data.entries + newEntries)
                 }
                 CashdyWidget.updateAll(ctx)
-                ui.say("✅ ${newRec.size} regelmäßig, ${newEntries.size} einzeln übernommen")
+                ui.say("${newRec.size} regelmäßig, ${newEntries.size} einzeln übernommen")
                 ui.back()
             })
             Spacer(Modifier.height(40.dp))

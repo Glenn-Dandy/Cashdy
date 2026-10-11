@@ -74,7 +74,11 @@ object Store {
         }
     }
 
-    /** Neue Standard-Kategorien in alten Datenbeständen ergänzen. */
+    /**
+     * Neue Standard-Kategorien in alten Datenbeständen ergänzen. Den Start des Rücklage-Topfs
+     * setzt nur das Onboarding: Bestehende Daten rechnen weiter so, als liefe der Topf schon
+     * immer, sonst stünde nach dem Update plötzlich eine volle Jahresrechnung im Monat.
+     */
     private fun migrate(d: AppData): AppData {
         val have = d.categories.map { it.id }.toSet()
         val missing = DefaultCategories.all.filter { it.id !in have }

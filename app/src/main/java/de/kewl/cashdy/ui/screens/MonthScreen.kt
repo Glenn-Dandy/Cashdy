@@ -40,17 +40,17 @@ import de.kewl.cashdy.domain.Money
 import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.ui.AddRequest
 import de.kewl.cashdy.ui.LocalUi
-import de.kewl.cashdy.ui.components.BarValue
-import de.kewl.cashdy.ui.components.Card
-import de.kewl.cashdy.ui.components.Donut
-import de.kewl.cashdy.ui.components.EmojiBubble
-import de.kewl.cashdy.ui.components.EntryRow
+import de.kewl.cashdy.ui.components.EntryGroup
+import de.kewl.cashdy.ui.components.Group
+import de.kewl.cashdy.ui.components.GroupDivider
 import de.kewl.cashdy.ui.components.Hint
-import de.kewl.cashdy.ui.components.MonthBars
+import de.kewl.cashdy.ui.components.ValueRow
+import de.kewl.cashdy.data.DefaultCategories
+import de.kewl.cashdy.data.EntryKind
+import de.kewl.cashdy.domain.Period
+import de.kewl.cashdy.domain.Recurrence
 import de.kewl.cashdy.ui.components.Pill
 import de.kewl.cashdy.ui.components.SectionTitle
-import de.kewl.cashdy.ui.components.Slice
-import de.kewl.cashdy.ui.components.categoryTint
 import de.kewl.cashdy.ui.components.dayLabel
 import de.kewl.cashdy.ui.theme.C
 import java.time.LocalDate
@@ -68,16 +68,20 @@ fun MonthScreen() {
     val period = Periods.periodFor(anchor, d.settings)
     val sum = remember(d, period) { Budget.summary(d, period, today) }
     val prevSum = remember(d, period) { Budget.summary(d, Periods.previous(period, d.settings), today) }
-    val canGoNext = period.end.isBefore(today)
+    // Auch in die Zukunft blättern, um zu sehen, was dort fest ansteht.
+    val canGoNext = period.start.isBefore(today.plusMonths(12))
+    val future = period.start.isAfter(today)
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
-            .pointerInput(period) {
+            .pointerInput(period, yearView) {
                 var total = 0f
                 detectHorizontalDragGestures(
                     onDragEnd = {
-                        if (total > 120 && !yearView) anchor = Periods.previous(period, d.settings).start
-                        if (total < -120 && canGoNext && !yearView) anchor = Periods.next(period, d.settings).start
+                        if (!yearView) {
+                            if (total > 120) anchor = Periods.previous(period, d.settings).start
+                            if (total < -120 && canGoNext) anchor = Periods.next(period, d.settings).start
+                        }
                         total = 0f
                     },
                 ) { _, dx -> total += dx }
@@ -86,140 +90,184 @@ fun MonthScreen() {
     ) {
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (yearView) "Dein Jahr" else period.label, style = MaterialTheme.typography.headlineMedium, color = c.fg, modifier = Modifier.weight(1f))
+            Text(if (yearView) "Jahr" else "Monat", style = MaterialTheme.typography.headlineMedium, color = c.fg, modifier = Modifier.weight(1f))
             Pill("Monat", !yearView, { yearView = false })
             Spacer(Modifier.padding(3.dp))
             Pill("Jahr", yearView, { yearView = true })
         }
 
         if (yearView) {
-            YearView()
-            Spacer(Modifier.height(150.dp))
+            YearView { p -> anchor = p.start; yearView = false }
+            Spacer(Modifier.height(110.dp))
             return@Column
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Arrow("‹") { anchor = Periods.previous(period, d.settings).start }
-            Text(period.rangeLabel, style = MaterialTheme.typography.bodyMedium, color = c.muted, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(period.label, style = MaterialTheme.typography.titleMedium, color = c.fg)
+                Text(period.rangeLabel, style = MaterialTheme.typography.bodySmall, color = c.muted)
+            }
             Arrow("›", enabled = canGoNext) { anchor = Periods.next(period, d.settings).start }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Mini("💰", "rein", Money.short(sum.income), Modifier.weight(1f))
-            Mini("🔁", "fest", Money.short(sum.fixed + sum.reserve), Modifier.weight(1f))
-            Mini("🛒", "ausgegeben", Money.short(sum.spent), Modifier.weight(1f))
-        }
-
-        Card {
-            val slices = sum.byCategory.map { cs -> Slice(cs.amount, Color(d.category(cs.categoryId)?.color ?: 0xFFC3BED6)) }
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Donut(slices, size = 200.dp) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (sum.free >= 0) "übrig" else "drüber", style = MaterialTheme.typography.bodySmall, color = c.muted)
-                        Text(Money.short(kotlin.math.abs(sum.free)), style = MaterialTheme.typography.headlineSmall, color = if (sum.free >= 0) c.fg else c.warn)
-                    }
-                }
+        Group {
+            ValueRow("Einnahmen", Money.format(sum.income))
+            GroupDivider()
+            ValueRow("Fest", "− " + Money.format(sum.fixed))
+            if (sum.reserve > 0) {
+                GroupDivider()
+                ValueRow("Rücklage", "− " + Money.format(sum.reserve))
             }
-            if (sum.byCategory.isEmpty()) Hint("Noch nichts in diesem Monat.", Modifier.padding(top = 8.dp))
+            GroupDivider()
+            ValueRow("Ausgegeben", "− " + Money.format(sum.spent))
+            GroupDivider()
+            ValueRow(
+                when { future -> "Zum Ausgeben"; sum.free >= 0 -> if (period.end.isBefore(today)) "Übrig geblieben" else "Noch frei"; else -> "Drüber" },
+                Money.format(sum.free), strong = true, valueColor = if (sum.free >= 0) c.fg else c.warn,
+            )
         }
 
-        if (sum.byCategory.isNotEmpty()) {
+        val variable = sum.entries.filter { Budget.spendingValue(it, d.settings.cashMode) > 0 }
+            .groupBy { if (it.kind == EntryKind.EXPENSE) it.categoryId ?: DefaultCategories.OTHER else DefaultCategories.CASH_UNKNOWN }
+            .mapValues { (_, es) -> es.sumOf { Budget.spendingValue(it, d.settings.cashMode) } }
+            .toList().sortedByDescending { it.second }
+        if (variable.isNotEmpty()) {
             SectionTitle("Wohin ging's?")
             val prevBy = prevSum.byCategory.associate { it.categoryId to it.amount }
-            sum.byCategory.forEach { cs ->
-                val cat = d.category(cs.categoryId)
-                val prev = prevBy[cs.categoryId] ?: 0
-                val sel = filter == cs.categoryId
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(if (sel) c.soft2 else c.surface)
-                        .clickable { filter = if (sel) null else cs.categoryId }.padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    EmojiBubble(cat?.emoji ?: "✨", categoryTint(cat, c.dark), 36.dp)
-                    Column(Modifier.weight(1f)) {
-                        Text(cat?.name ?: "Sonstiges", style = MaterialTheme.typography.titleSmall, color = c.fg)
+            val max = variable.first().second.coerceAtLeast(1)
+            Group {
+                variable.forEachIndexed { i, (catId, amount) ->
+                    if (i > 0) GroupDivider()
+                    val sel = filter == catId
+                    Column(
+                        Modifier.fillMaxWidth().background(if (sel) c.soft2 else c.surface)
+                            .clickable { filter = if (sel) null else catId }.padding(horizontal = 16.dp, vertical = 10.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(d.category(catId)?.name ?: "Sonstiges", style = MaterialTheme.typography.titleSmall, color = c.fg, modifier = Modifier.weight(1f))
+                            Text(Money.format(amount), style = MaterialTheme.typography.titleSmall, color = c.fg)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(c.line)) {
+                            Box(Modifier.fillMaxWidth(amount.toFloat() / max).height(6.dp).clip(RoundedCornerShape(50)).background(c.primary))
+                        }
+                        val prev = prevBy[catId] ?: 0
                         if (prev > 0) {
-                            val diff = cs.amount - prev
+                            val diff = amount - prev
                             Text(
-                                if (diff > 0) "▲ ${Money.short(diff)} mehr als im Vormonat" else if (diff < 0) "▼ ${Money.short(-diff)} weniger als im Vormonat" else "wie im Vormonat",
-                                style = MaterialTheme.typography.bodySmall, color = if (diff > 0) c.warn else c.good,
+                                if (diff > 0) "${Money.short(diff)} mehr als im Vormonat" else if (diff < 0) "${Money.short(-diff)} weniger als im Vormonat" else "wie im Vormonat",
+                                style = MaterialTheme.typography.bodySmall, color = c.muted, modifier = Modifier.padding(top = 4.dp),
                             )
                         }
                     }
-                    Text(Money.format(cs.amount), style = MaterialTheme.typography.titleSmall, color = c.fg)
                 }
             }
         }
 
-        val list = sum.entries.filter { filter == null || it.categoryId == filter }
-        if (list.isNotEmpty()) {
-            SectionTitle(if (filter != null) "Einträge: ${d.category(filter)?.name}" else "Alle Einträge")
-            list.groupBy { it.date }.toSortedMap(compareByDescending { it }).forEach { (day, es) ->
-                Text(dayLabel(day, today), style = MaterialTheme.typography.labelMedium, color = c.muted, modifier = Modifier.padding(start = 6.dp, top = 4.dp))
-                es.forEach { e -> EntryRow(e, d.category(e.categoryId)) { ui.openAdd(AddRequest(editId = e.id)) } }
-            }
+        val list = sum.entries.filter { e ->
+            filter == null || (if (e.kind == EntryKind.EXPENSE) e.categoryId ?: DefaultCategories.OTHER else DefaultCategories.CASH_UNKNOWN) == filter
         }
-        if (sum.fixedItems.isNotEmpty() || sum.reserveItems.isNotEmpty()) {
+        if (list.isNotEmpty()) {
+            SectionTitle(if (filter != null) "Einträge: ${d.category(filter)?.name ?: "Sonstiges"}" else "Alle Einträge")
+            list.groupBy { it.date }.toSortedMap(compareByDescending { it }).forEach { (day, es) ->
+                Text(dayLabel(day, today), style = MaterialTheme.typography.labelMedium, color = c.muted, modifier = Modifier.padding(start = 6.dp, top = 2.dp))
+                EntryGroup(es, { d.category(it) }) { e -> ui.openAdd(AddRequest(editId = e.id)) }
+            }
+        } else if (!future) Hint("Noch nichts eingetragen in diesem Monat.")
+
+        if (sum.fixedItems.isNotEmpty() || sum.reserveItems.isNotEmpty() || sum.potBills.isNotEmpty()) {
             SectionTitle("Fest in diesem Monat")
-            (sum.fixedItems + sum.reserveItems).sortedBy { it.date }.forEach { o ->
-                Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp)) {
-                    Text(
-                        (d.category(o.recurring.categoryId)?.emoji ?: "🔁") + " " + o.recurring.name + if (o.recurring.spread) " (Rücklage)" else "",
-                        style = MaterialTheme.typography.bodyMedium, color = c.fg, modifier = Modifier.weight(1f),
+            Group {
+                var first = true
+                fun sep() = !first.also { first = false }
+                sum.fixedItems.sortedBy { it.date }.forEach { o ->
+                    if (sep()) GroupDivider()
+                    val partly = o.recurring.spread && o.recurring.intervalMonths > 1
+                    ValueRow(
+                        o.recurring.name, Money.format(o.amount),
+                        note = if (!partly) "am ${o.date.dayOfMonth}."
+                        else if (o.fromPot > 0) "am ${o.date.dayOfMonth}., Rest, ${Money.format(o.fromPot)} kamen aus der Rücklage"
+                        else "am ${o.date.dayOfMonth}., die Rücklage war noch leer",
                     )
-                    Text(Money.format(o.amount), style = MaterialTheme.typography.bodyMedium, color = c.muted)
+                }
+                sum.potBills.filter { it.amount - it.fromPot <= it.recurring.intervalMonths }.forEach { b ->
+                    if (sep()) GroupDivider()
+                    ValueRow(b.recurring.name, Money.format(b.amount), valueColor = c.muted, note = "am ${b.date.dayOfMonth}., bezahlt aus der Rücklage")
+                }
+                sum.reserveItems.forEach { o ->
+                    if (sep()) GroupDivider()
+                    val r = o.recurring
+                    ValueRow("Rücklage ${r.name}", Money.format(o.amount), note = "${Recurrence.intervalLabel(r.intervalMonths)} ${Money.format(Recurrence.priceAt(r, o.date))}")
                 }
             }
         }
-        Spacer(Modifier.height(150.dp))
+        Spacer(Modifier.height(110.dp))
     }
 }
 
 @Composable
-private fun YearView() {
+private fun YearView(onOpen: (Period) -> Unit) {
     val d by Store.data.collectAsState()
     val today = LocalDate.now()
     val c = C.colors
-    val periods = remember(d) { Periods.lastN(today, d.settings, 12) }
-    val sums = remember(d) { periods.map { Budget.summary(d, it, today) } }
-    Card {
-        MonthBars(sums.mapIndexed { i, s ->
-            BarValue(s.period.shortLabel.take(3), s.income, s.fixed + s.reserve + s.spent, highlight = i == sums.lastIndex)
-        })
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(top = 6.dp)) {
-            Legend(c.primary, "rein")
-            Legend(c.coin, "raus")
-        }
-    }
-    val saved = sums.filter { it.period.end.isBefore(today) }.sumOf { it.free }
-    Card(color = c.soft3) {
-        Text(if (saved >= 0) "🐷 In den letzten Monaten übrig geblieben" else "📉 In den letzten Monaten drüber", style = MaterialTheme.typography.titleSmall, color = c.fg)
-        Text(Money.format(kotlin.math.abs(saved)), style = MaterialTheme.typography.headlineMedium, color = c.fg)
-    }
-    sums.reversed().forEach { s ->
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(c.surface).padding(12.dp)) {
-            Text(s.period.label, style = MaterialTheme.typography.titleSmall, color = c.fg, modifier = Modifier.weight(1f))
-            Text(Money.format(s.free, withSign = true), style = MaterialTheme.typography.titleSmall, color = if (s.free >= 0) c.good else c.warn)
-        }
-    }
-}
+    var year by remember { mutableStateOf(Periods.periodFor(today, d.settings).let { it.start.plusDays(14).year }) }
+    val plan = remember(d, year) { Budget.year(d, year, today) }
 
-@Composable
-private fun Legend(color: Color, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(10.dp).clip(CircleShape).background(color))
-        Text(" $text", style = MaterialTheme.typography.bodySmall, color = C.colors.muted)
+        Arrow("‹") { year-- }
+        Text("$year", style = MaterialTheme.typography.titleLarge, color = c.fg, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+        Arrow("›", enabled = year <= today.year) { year++ }
     }
-}
-
-@Composable
-private fun Mini(emoji: String, label: String, value: String, modifier: Modifier) {
-    Column(modifier.clip(RoundedCornerShape(20.dp)).background(C.colors.surface).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(emoji, fontSize = 20.sp)
-        Text(value, style = MaterialTheme.typography.titleSmall, color = C.colors.fg, maxLines = 1)
-        Text(label, style = MaterialTheme.typography.bodySmall, color = C.colors.muted)
+    Group {
+        Column(Modifier.padding(16.dp)) {
+            Text("Fixkosten im ganzen Jahr", style = MaterialTheme.typography.bodyMedium, color = c.muted)
+            Text(Money.format(plan.fixedTotal), style = MaterialTheme.typography.headlineMedium, color = c.fg)
+            Text("im Schnitt ${Money.format(plan.fixedPerMonth)} pro Monat", style = MaterialTheme.typography.bodySmall, color = c.muted)
+        }
     }
+    Group {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Text("Monat", style = MaterialTheme.typography.labelMedium, color = c.muted, modifier = Modifier.weight(1.1f))
+            Text("rein", style = MaterialTheme.typography.labelMedium, color = c.muted, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+            Text("fest", style = MaterialTheme.typography.labelMedium, color = c.muted, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+            Text("frei", style = MaterialTheme.typography.labelMedium, color = c.muted, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+        }
+        // Monate vor dem ersten Eintrag sind leer und bleiben weg.
+        val shown = plan.months.dropWhile { it.income == 0L && it.fixed == 0L && it.reserve == 0L && it.spent == 0L && it.period.end.isBefore(today) }
+        if (shown.isEmpty()) Hint("Für dieses Jahr gibt es noch nichts.", Modifier.padding(16.dp))
+        shown.forEach { s ->
+            GroupDivider()
+            val past = s.period.end.isBefore(today)
+            val now = today in s.period
+            val tone = when { now -> c.primary; past -> c.muted; else -> c.fg }
+            Column(Modifier.fillMaxWidth().clickable { onOpen(s.period) }.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Row {
+                    Text(monthAbbr[s.period.start.plusDays(14).monthValue - 1], style = MaterialTheme.typography.titleSmall, color = tone, modifier = Modifier.weight(1.1f))
+                    Text(Money.short(s.income), style = MaterialTheme.typography.bodyMedium, color = tone, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+                    Text(Money.short(s.fixed + s.reserve), style = MaterialTheme.typography.bodyMedium, color = tone, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+                    Text(
+                        (if (past && s.free > 0) "+" else "") + Money.short(s.free),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (s.free < 0) c.warn else if (now) c.primary else c.fg,
+                        textAlign = TextAlign.End, modifier = Modifier.weight(1f),
+                    )
+                }
+                // Große Rechnungen in diesem Monat: bezahlt der Topf oder belastet der Rest den Monat?
+                s.potBills.forEach { b ->
+                    val rest = b.amount - b.fromPot
+                    Text(
+                        "${b.recurring.name} ${Money.short(b.amount)}" + if (rest > b.recurring.intervalMonths) ", ${Money.short(rest)} fehlen in der Rücklage" else ", aus der Rücklage",
+                        style = MaterialTheme.typography.bodySmall, color = if (rest > b.recurring.intervalMonths) c.warn else c.muted,
+                    )
+                }
+                s.fixedItems.filter { it.recurring.intervalMonths > 1 && !it.recurring.spread }.forEach { o ->
+                    Text("${o.recurring.name} ${Money.short(o.amount)}", style = MaterialTheme.typography.bodySmall, color = c.warn)
+                }
+            }
+        }
+    }
+    Hint("Vorbei: was übrig blieb. Jetzt: was noch frei ist. Danach: was zum Ausgeben bereitsteht, wenn nichts dazukommt. Tippen öffnet den Monat.")
 }
 
 @Composable
@@ -230,3 +278,5 @@ private fun Arrow(t: String, enabled: Boolean = true, onClick: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) { Text(t, fontSize = 24.sp, color = if (enabled) C.colors.fg else C.colors.line) }
 }
+
+private val monthAbbr = listOf("Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez.")

@@ -26,6 +26,7 @@ sealed interface Route {
     data object Recorder : Route
     data object Backup : Route
     data object About : Route
+    data object Help : Route
 }
 
 val Tabs = listOf(Route.Home, Route.Month, Route.Fixed, Route.More)
@@ -41,6 +42,8 @@ data class AddRequest(
     val kind: EntryKind = EntryKind.EXPENSE,
     val receiptUri: Uri? = null,
     val fromScan: Boolean = false,
+    /** Beträge vom Bon zum Antippen, falls die erkannte Summe nicht stimmt. */
+    val candidates: List<Cents> = emptyList(),
 )
 
 class Ui {

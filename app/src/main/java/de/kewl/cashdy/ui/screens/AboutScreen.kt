@@ -44,7 +44,6 @@ import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.ui.LocalUi
 import de.kewl.cashdy.ui.Route
 import de.kewl.cashdy.ui.components.BigButton
-import de.kewl.cashdy.ui.components.EmojiBubble
 import de.kewl.cashdy.ui.components.Mascot
 import de.kewl.cashdy.ui.components.Mood
 import de.kewl.cashdy.ui.components.ScreenHeader
@@ -111,7 +110,7 @@ fun AboutScreen() {
                     if (taps >= 7) {
                         taps = 0
                         setSettings { it.copy(devMode = true) }
-                        ui.say("🛠️ Entwicklermodus an")
+                        ui.say("Entwicklermodus an")
                     }
                 })
             },
@@ -124,28 +123,27 @@ fun AboutScreen() {
         Spacer(Modifier.height(20.dp))
 
         Section("Feedback") {
-            ActionRow("🐞", "Fehler melden") { openIssue("[Bug] ", "bug") }
+            ActionRow("Fehler melden") { openIssue("[Bug] ", "bug") }
             RowDivider()
-            ActionRow("💡", "Idee vorschlagen") { openIssue("[Idee] ", "enhancement") }
+            ActionRow("Idee vorschlagen") { openIssue("[Idee] ", "enhancement") }
         }
         Section("Projekt") {
-            ActionRow("⭐", "Stern auf GitHub geben") { openUrl(Repo.URL) }
+            ActionRow("Stern auf GitHub geben") { openUrl(Repo.URL) }
             RowDivider()
-            ActionRow("🧑‍💻", "Quelltext ansehen") { openUrl(Repo.URL) }
+            ActionRow("Quelltext ansehen") { openUrl(Repo.URL) }
             RowDivider()
-            ActionRow("❤️", "Projekt unterstützen") { openUrl(Repo.SUPPORT_URL) }
+            ActionRow("Projekt unterstützen") { openUrl(Repo.SUPPORT_URL) }
         }
         Section("Datenschutz") {
             Text(
                 "Keine Anmeldung, kein Bank-Login, kein Server. Alles, was du einträgst, bleibt auf deinem Handy. " +
-                    "Benachrichtigungen lese ich nur von den Apps, die du freigibst. Ins Internet geht nur die Update-Prüfung " +
-                    "(GitHub) und, wenn du sie einrichtest, die Sicherung auf deine Nextcloud.",
+                    "Benachrichtigungen lese ich nur von den Apps, die du freigibst. Ins Internet geht nur die Update-Prüfung (GitHub).",
                 style = MaterialTheme.typography.bodyMedium, color = c.muted, modifier = Modifier.padding(16.dp),
             )
         }
         Section("Update") {
             when (val u = update) {
-                UpdateUi.Idle -> ActionRow("🔄", "Nach Update suchen") { check() }
+                UpdateUi.Idle -> ActionRow("Nach Update suchen") { check() }
                 UpdateUi.Checking -> Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(20.dp), color = c.primary, strokeWidth = 2.dp)
                     Spacer(Modifier.width(12.dp))
@@ -153,18 +151,18 @@ fun AboutScreen() {
                 }
                 is UpdateUi.Done -> when (val r = u.result) {
                     UpdateResult.UpToDate -> Column(Modifier.padding(16.dp)) {
-                        Text("✅ Du hast die neueste Version.", color = c.fg, style = MaterialTheme.typography.bodyLarge)
+                        Text("Du hast die neueste Version.", color = c.fg, style = MaterialTheme.typography.bodyLarge)
                         TextButtonSoft("Nochmal prüfen", { check() })
                     }
                     is UpdateResult.Available -> Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("🎉 Version ${r.version} ist da!", color = c.primary, style = MaterialTheme.typography.titleMedium)
+                        Text("Version ${r.version} ist da!", color = c.primary, style = MaterialTheme.typography.titleMedium)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             BigButton("APK laden", { openUrl(r.downloadUrl ?: r.releaseUrl) })
                             TextButtonSoft("Was ist neu?", { openUrl(r.releaseUrl) })
                         }
                     }
                     UpdateResult.Failed -> Column(Modifier.padding(16.dp)) {
-                        Text("😕 GitHub war gerade nicht erreichbar.", color = c.warn)
+                        Text("GitHub war gerade nicht erreichbar.", color = c.warn)
                         TextButtonSoft("Nochmal prüfen", { check() })
                     }
                 }
@@ -178,9 +176,9 @@ fun AboutScreen() {
                     }
                 }
                 RowDivider()
-                ActionRow("🎙️", "Rekorder für Benachrichtigungen") { ui.go(Route.Recorder) }
+                ActionRow("Rekorder für Benachrichtigungen") { ui.go(Route.Recorder) }
                 RowDivider()
-                ActionRow("🙈", "Entwicklermodus ausschalten") { setSettings { it.copy(devMode = false, devUpdates = false) } }
+                ActionRow("Entwicklermodus ausschalten") { setSettings { it.copy(devMode = false, devUpdates = false) } }
             }
         }
 
@@ -200,18 +198,17 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun ActionRow(emoji: String, label: String, onClick: () -> Unit) {
+private fun ActionRow(label: String, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 10.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        EmojiBubble(emoji, C.colors.soft2, 36.dp)
-        Text(label, style = MaterialTheme.typography.titleSmall, color = C.colors.fg, modifier = Modifier.weight(1f).padding(start = 12.dp))
+        Text(label, style = MaterialTheme.typography.titleSmall, color = C.colors.fg, modifier = Modifier.weight(1f))
         Box { Text("›", color = C.colors.muted, fontSize = 22.sp) }
     }
 }
 
 @Composable
 private fun RowDivider() {
-    HorizontalDivider(Modifier.padding(start = 60.dp), color = C.colors.line)
+    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = C.colors.line)
 }

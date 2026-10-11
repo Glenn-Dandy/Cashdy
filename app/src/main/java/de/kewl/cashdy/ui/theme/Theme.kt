@@ -40,21 +40,22 @@ data class CashdyColors(
 )
 
 val LightColors = CashdyColors(
-    bg = Color(0xFFF3EFFF), surface = Color(0xFFFFFFFF), fg = Color(0xFF2A2150), muted = Color(0xFF7B74A0),
+    bg = Color(0xFFF6F4FB), surface = Color(0xFFFFFFFF), fg = Color(0xFF2A2150), muted = Color(0xFF8A84A6),
     hero = Color(0xFF6C4DF6), heroFg = Color.White, heroChip = Color(0x33FFFFFF),
     primary = Color(0xFF6C4DF6), onPrimary = Color.White,
     coin = Color(0xFFFFB37A), ink = Color(0xFF2A2150),
-    soft1 = Color(0xFFFFE3CF), soft2 = Color(0xFFE2D9FF), soft3 = Color(0xFFFFF1BF),
-    warn = Color(0xFFD9663B), good = Color(0xFF2E9E6E), line = Color(0xFFE4DEF7), dark = false,
+    // Zarte Flächen: nur als Hinterlegung für Ausgewähltes und Hinweise, nie großflächig bunt.
+    soft1 = Color(0xFFFFF3EA), soft2 = Color(0xFFEFEBFE), soft3 = Color(0xFFFBF7E6),
+    warn = Color(0xFFD9663B), good = Color(0xFF2E9E6E), line = Color(0xFFECE8F6), dark = false,
 )
 
 val DarkColors = CashdyColors(
-    bg = Color(0xFF16122A), surface = Color(0xFF241E40), fg = Color(0xFFF1EDFF), muted = Color(0xFFA9A1D1),
+    bg = Color(0xFF17142A), surface = Color(0xFF221D3B), fg = Color(0xFFF1EDFF), muted = Color(0xFFA9A1D1),
     hero = Color(0xFF7A5CFF), heroFg = Color.White, heroChip = Color(0x2EFFFFFF),
     primary = Color(0xFF8E76FF), onPrimary = Color.White,
     coin = Color(0xFFFFB37A), ink = Color(0xFF2A2150),
-    soft1 = Color(0xFF3D2A2E), soft2 = Color(0xFF2F2757), soft3 = Color(0xFF38331F),
-    warn = Color(0xFFFF9A70), good = Color(0xFF6FD6A4), line = Color(0xFF332B57), dark = true,
+    soft1 = Color(0xFF33262C), soft2 = Color(0xFF2C2552), soft3 = Color(0xFF2F2B22),
+    warn = Color(0xFFFF9A70), good = Color(0xFF6FD6A4), line = Color(0xFF2F2852), dark = true,
 )
 
 val LocalCashdy = staticCompositionLocalOf { LightColors }

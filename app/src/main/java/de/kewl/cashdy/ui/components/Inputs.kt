@@ -131,6 +131,6 @@ fun DateChip(date: LocalDate, onClick: () -> Unit, modifier: Modifier = Modifier
     Box(
         modifier.clip(RoundedCornerShape(50)).background(C.colors.surface).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 9.dp),
     ) {
-        Text("📅 " + if (date == LocalDate.now()) "Heute" else shortDate(date), style = MaterialTheme.typography.labelLarge, color = C.colors.fg)
+        Text(if (date == LocalDate.now()) "Heute" else shortDate(date), style = MaterialTheme.typography.labelLarge, color = C.colors.fg)
     }
 }

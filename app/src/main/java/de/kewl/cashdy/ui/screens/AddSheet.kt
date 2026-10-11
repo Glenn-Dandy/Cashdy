@@ -1,5 +1,26 @@
 package de.kewl.cashdy.ui.screens
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.ui.components.dayLabel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -43,13 +64,9 @@ import de.kewl.cashdy.ui.AddRequest
 import de.kewl.cashdy.ui.LocalUi
 import de.kewl.cashdy.ui.components.AmountInput
 import de.kewl.cashdy.ui.components.BigButton
-import de.kewl.cashdy.ui.components.DateChip
 import de.kewl.cashdy.ui.components.DatePick
 import de.kewl.cashdy.ui.components.Keypad
 import de.kewl.cashdy.ui.components.Pill
-import de.kewl.cashdy.ui.components.SoftField
-import de.kewl.cashdy.ui.components.TextButtonSoft
-import de.kewl.cashdy.ui.components.categoryTint
 import de.kewl.cashdy.ui.theme.C
 import de.kewl.cashdy.widget.CashdyWidget
 import java.io.File
@@ -72,9 +89,10 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
     var categoryId by remember { mutableStateOf(editing?.categoryId ?: req.categoryId) }
     var categoryTouched by remember { mutableStateOf(editing != null || req.categoryId != null) }
     val lastMethod = d.entries.lastOrNull { it.source == Source.MANUAL && it.kind == EntryKind.EXPENSE && it.method != PayMethod.TRANSFER }?.method ?: PayMethod.CARD
-    var method by remember { mutableStateOf(editing?.method ?: req.method ?: lastMethod) }
+    // PayPal steht nicht mehr zur Wahl: für die Rechnung zählt nur bar oder nicht bar.
+    var method by remember { mutableStateOf(editing?.method ?: req.method ?: lastMethod.takeIf { it == PayMethod.CASH } ?: PayMethod.CARD) }
     var pickDate by remember { mutableStateOf(false) }
-    var showNote by remember { mutableStateOf(false) }
+    var catMenu by remember { mutableStateOf(false) }
     var keepReceipt by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -88,80 +106,102 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
     }
 
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = c.bg) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = c.surface) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (!cashKind) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Pill("Ausgabe", kind == EntryKind.EXPENSE, { kind = EntryKind.EXPENSE; if (!categoryTouched) categoryId = null })
-                    Pill("Einnahme", kind == EntryKind.INCOME, { kind = EntryKind.INCOME; categoryId = de.kewl.cashdy.data.DefaultCategories.INCOME_OTHER })
-                    Pill("Erstattung", kind == EntryKind.REFUND, { kind = EntryKind.REFUND })
-                    Spacer(Modifier.weight(1f))
-                    if (editing == null) TextButtonSoft("📷 Bon", onScan)
+                    Segmented(
+                        listOf(EntryKind.EXPENSE to "Ausgabe", EntryKind.INCOME to "Einnahme", EntryKind.REFUND to "Erstattung"),
+                        kind, Modifier.weight(1f),
+                    ) { k ->
+                        kind = k
+                        when (k) {
+                            EntryKind.INCOME -> categoryId = de.kewl.cashdy.data.DefaultCategories.INCOME_OTHER
+                            else -> if (!categoryTouched || cats.none { it.id == categoryId }) categoryId = null
+                        }
+                    }
+                    if (editing == null) Box(
+                        Modifier.size(40.dp).clip(CircleShape).background(c.bg).clickable(onClick = onScan),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.PhotoCamera, "Kassenbon", tint = c.fg, modifier = Modifier.size(22.dp)) }
                 }
             } else {
                 Text(
-                    when (kind) { EntryKind.CASH_WITHDRAWAL -> "🏧 Geld abgehoben"; EntryKind.CASH_START -> "💶 Bargeld-Startbestand"; else -> "💶 Bargeld-Abgleich" },
+                    when (kind) { EntryKind.CASH_WITHDRAWAL -> "Geld abgehoben"; EntryKind.CASH_START -> "Bargeld-Startbestand"; else -> "Bargeld-Abgleich" },
                     style = MaterialTheme.typography.titleLarge, color = c.fg,
                 )
             }
 
             // Betrag
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
-                Text(AmountInput.display(amountText), style = MaterialTheme.typography.displayLarge, fontSize = 52.sp, color = if (amountText.isEmpty()) c.muted else c.fg)
+                Text(AmountInput.display(amountText), style = MaterialTheme.typography.displayLarge, fontSize = 50.sp, color = if (amountText.isEmpty()) c.muted else c.fg)
                 Text(" €", style = MaterialTheme.typography.headlineMedium, color = c.muted, modifier = Modifier.padding(bottom = 8.dp))
             }
 
-            if (kind == EntryKind.EXPENSE || kind == EntryKind.REFUND) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Pill("💳 Karte", method == PayMethod.CARD, { method = PayMethod.CARD })
-                    Pill("💶 Bar", method == PayMethod.CASH, { method = PayMethod.CASH })
-                    Pill("🅿️ PayPal", method == PayMethod.PAYPAL, { method = PayMethod.PAYPAL })
+            // Vom Bon: die anderen Beträge zum Antippen, falls die Summe nicht stimmt.
+            if (req.candidates.size > 1) {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Vom Bon:", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                    req.candidates.forEach { v ->
+                        Pill(Money.format(v), AmountInput.cents(amountText) == v, { amountText = AmountInput.fromCents(v) })
+                    }
                 }
             }
 
-            if (!cashKind) {
-                // Eine wischbare Zeile, meistgenutzte zuerst: hält das Sheet kurz genug, dass
-                // Ziffernblock und Speichern-Knopf ohne Scrollen sichtbar bleiben.
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    cats.forEach { cat ->
-                        val sel = cat.id == categoryId
-                        Row(
-                            Modifier.clip(RoundedCornerShape(50))
-                                .background(if (sel) c.primary else categoryTint(cat, c.dark))
-                                .clickable { categoryId = cat.id; categoryTouched = true }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(cat.emoji, fontSize = 16.sp)
-                            Spacer(Modifier.padding(2.dp))
-                            Text(cat.name, style = MaterialTheme.typography.labelLarge, color = if (sel) c.onPrimary else c.fg, maxLines = 1)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))) {
+                if (!cashKind) {
+                    Box {
+                        val cat = cats.firstOrNull { it.id == categoryId }
+                        FieldRow("Kategorie", { catMenu = true }) {
+                            Text(cat?.let { "${it.emoji} ${it.name}" } ?: "Wählen", style = MaterialTheme.typography.titleSmall, color = if (cat == null) c.muted else c.fg, modifier = Modifier.weight(1f))
+                            Icon(Icons.Rounded.KeyboardArrowDown, null, tint = c.muted)
+                        }
+                        DropdownMenu(catMenu, { catMenu = false }, containerColor = c.surface, modifier = Modifier.heightIn(max = 360.dp)) {
+                            cats.forEach { ct ->
+                                DropdownMenuItem(
+                                    text = { Text("${ct.emoji}  ${ct.name}", style = MaterialTheme.typography.bodyLarge, color = c.fg) },
+                                    onClick = { categoryId = ct.id; categoryTouched = true; catMenu = false },
+                                )
+                            }
                         }
                     }
+                    HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
+                    FieldRow(if (kind == EntryKind.INCOME) "Von wem?" else "Wo?") {
+                        InlineField(merchant, { t ->
+                            merchant = t
+                            if (!categoryTouched && kind == EntryKind.EXPENSE) Merchants.suggestCategory(d, t)?.let { categoryId = it }
+                        }, if (kind == EntryKind.INCOME) "z. B. Oma" else "z. B. REWE", Modifier.weight(1f))
+                    }
+                    HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    SoftField(merchant, { t ->
-                        merchant = t
-                        if (!categoryTouched && kind == EntryKind.EXPENSE) Merchants.suggestCategory(d, t)?.let { categoryId = it }
-                    }, if (kind == EntryKind.INCOME) "Von wem?" else "Wo? z. B. REWE", Modifier.weight(1f))
-                    DateChip(date, { pickDate = true })
+                FieldRow("Wann?", { pickDate = true }) {
+                    Text(dayLabel(date), style = MaterialTheme.typography.titleSmall, color = c.fg, modifier = Modifier.weight(1f))
+                    Icon(Icons.Rounded.KeyboardArrowDown, null, tint = c.muted)
                 }
-                if (showNote || note.isNotBlank()) SoftField(note, { note = it }, "Notiz")
-            } else {
-                DateChip(date, { pickDate = true })
+                if (kind == EntryKind.EXPENSE || kind == EntryKind.REFUND) {
+                    HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
+                    // Eine erkannte PayPal-Zahlung bleibt PayPal, wenn der Schalter wieder ausgeht.
+                    val notCash = editing?.method?.takeIf { it != PayMethod.CASH } ?: PayMethod.CARD
+                    FieldRow("Bar bezahlt", { method = if (method == PayMethod.CASH) notCash else PayMethod.CASH }) {
+                        Spacer(Modifier.weight(1f))
+                        Switch(
+                            method == PayMethod.CASH, { method = if (it) PayMethod.CASH else notCash },
+                            colors = SwitchDefaults.colors(checkedTrackColor = c.primary, uncheckedTrackColor = c.line, uncheckedThumbColor = c.muted, uncheckedBorderColor = c.line),
+                        )
+                    }
+                }
+                if (!cashKind) {
+                    HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
+                    FieldRow("Notiz") { InlineField(note, { note = it }, "optional", Modifier.weight(1f)) }
+                }
             }
-            if (!cashKind && !showNote && note.isBlank() || req.fromScan && req.receiptUri != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (!cashKind && !showNote && note.isBlank()) TextButtonSoft("＋ Notiz", { showNote = true })
-                    Spacer(Modifier.weight(1f))
-                    if (req.fromScan && req.receiptUri != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { keepReceipt = !keepReceipt }) {
-                            Checkbox(keepReceipt, { keepReceipt = it })
-                            Text("Bon-Foto behalten", style = MaterialTheme.typography.bodyMedium, color = c.fg)
-                        }
-                    }
+            if (req.fromScan && req.receiptUri != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { keepReceipt = !keepReceipt }) {
+                    Checkbox(keepReceipt, { keepReceipt = it })
+                    Text("Bon-Foto behalten", style = MaterialTheme.typography.bodyMedium, color = c.fg)
                 }
             }
 
@@ -172,7 +212,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                 if (editing != null) {
                     Box(
                         Modifier.clip(RoundedCornerShape(50)).background(c.surface).clickable { confirmDelete = true }.padding(horizontal = 18.dp, vertical = 15.dp),
-                    ) { Text(if (confirmDelete) "Sicher?" else "🗑️", style = MaterialTheme.typography.titleMedium, color = c.warn) }
+                    ) { Text(if (confirmDelete) "Sicher?" else "Löschen", style = MaterialTheme.typography.titleMedium, color = c.warn) }
                     if (confirmDelete) {
                         BigButton("Ja, löschen", {
                             Store.update { it.copy(entries = it.entries.filterNot { e -> e.id == editing.id }) }
@@ -183,7 +223,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                     }
                 }
                 if (!confirmDelete) BigButton(
-                    if (editing != null) "Speichern" else "Eintragen ✓",
+                    if (editing != null) "Speichern" else "Eintragen",
                     enabled = cents != 0L,
                     modifier = Modifier.weight(1f),
                     onClick = {
@@ -215,7 +255,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                             learned.copy(entries = list)
                         }
                         CashdyWidget.updateAll(ctx)
-                        ui.say(if (editing != null) "Gespeichert ✓" else "Eingetragen ✓")
+                        ui.say(if (editing != null) "Gespeichert" else "Eingetragen")
                         onDismiss()
                     },
                 )
@@ -224,4 +264,46 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
         }
     }
     if (pickDate) DatePick(date, { pickDate = false }) { date = it }
+}
+
+@Composable
+private fun Segmented(options: List<Pair<EntryKind, String>>, selected: EntryKind, modifier: Modifier = Modifier, onSelect: (EntryKind) -> Unit) {
+    val c = C.colors
+    Row(modifier.clip(RoundedCornerShape(50)).background(c.bg).padding(3.dp)) {
+        options.forEach { (k, label) ->
+            val sel = k == selected
+            Box(
+                Modifier.weight(1f).clip(RoundedCornerShape(50)).background(if (sel) c.surface else c.bg)
+                    .clickable { onSelect(k) }.padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(label, style = MaterialTheme.typography.labelLarge, color = if (sel) c.fg else c.muted, maxLines = 1) }
+        }
+    }
+}
+
+@Composable
+private fun FieldRow(label: String, onClick: (() -> Unit)? = null, content: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 48.dp).then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, color = C.colors.muted, modifier = Modifier.width(96.dp))
+        content()
+    }
+}
+
+/** Schlichtes Textfeld ohne Rahmen, für die Zeilen im Eingabe-Sheet. */
+@Composable
+private fun InlineField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+    val c = C.colors
+    val style = MaterialTheme.typography.titleSmall.copy(color = c.fg)
+    BasicTextField(
+        value, onChange, modifier.padding(vertical = 12.dp), singleLine = true, textStyle = style,
+        cursorBrush = SolidColor(c.primary),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+        decorationBox = { inner ->
+            Box { if (value.isEmpty()) Text(placeholder, style = style.copy(color = c.muted)); inner() }
+        },
+    )
 }

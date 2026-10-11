@@ -74,7 +74,7 @@ fun SettingsScreen() {
         var name by remember { mutableStateOf(s.name) }
         SoftField(name, { name = it; setSettings { st -> st.copy(name = it.trim()) } }, "Wie soll ich dich nennen?")
 
-        SectionTitle("📆 Wann beginnt dein Monat?")
+        SectionTitle("Wann beginnt dein Monat?")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill("Am 1.", s.periodMode == PeriodMode.CALENDAR, { setSettings { it.copy(periodMode = PeriodMode.CALENDAR) } })
             Pill("Fester Tag", s.periodMode == PeriodMode.FIXED_DAY, { setSettings { it.copy(periodMode = PeriodMode.FIXED_DAY, periodDay = if (it.periodDay == 1) 27 else it.periodDay) } })
@@ -95,10 +95,10 @@ fun SettingsScreen() {
                     SettingSwitch("Wochenende: Werktag davor", "Fällt der Tag auf Samstag oder Sonntag, beginnt der Monat am Freitag.", s.shiftWeekend) { v -> setSettings { it.copy(shiftWeekend = v) } }
                 } else {
                     Hint("Kommt dein Gehalt, frage ich kurz nach und starte dann deinen neuen Monat. Bis dahin läuft der alte weiter. Erkennt die Bank-App den Eingang, geht das mit einem Tipp in der Benachrichtigung.")
-                    TextButtonSoft("💰 Gehalt ist heute gekommen, neuer Monat", {
+                    TextButtonSoft("Gehalt ist heute gekommen, neuer Monat", {
                         Store.update { Salary.startNewPeriod(it, LocalDate.now(), null) }
                         CashdyWidget.updateAll(ctx)
-                        ui.say("Neuer Monat gestartet 🎉")
+                        ui.say("Neuer Monat gestartet")
                     })
                     val p = Periods.periodFor(LocalDate.now(), s)
                     Hint("Aktueller Monat: seit ${p.start.dayOfMonth}.${p.start.monthValue}.")
@@ -106,7 +106,7 @@ fun SettingsScreen() {
             }
         }
 
-        SectionTitle("💶 Bargeld")
+        SectionTitle("Bargeld")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Pill("Portemonnaie", s.cashMode == CashMode.WALLET, { setSettings { it.copy(cashMode = CashMode.WALLET) } })
             Pill("Einfach-Modus", s.cashMode == CashMode.SIMPLE, { setSettings { it.copy(cashMode = CashMode.SIMPLE) } })
@@ -116,7 +116,7 @@ fun SettingsScreen() {
             else "Jede Abhebung zählt sofort als Ausgabe „Bargeld“. Barzahlungen musst du nicht extra eintragen."
         )
 
-        SectionTitle("🔔 Erinnerungen")
+        SectionTitle("Erinnerungen")
         if (!canNotify) {
             Card(color = c.soft1) {
                 Text("Benachrichtigungen sind aus", style = MaterialTheme.typography.titleSmall, color = c.fg)
@@ -138,7 +138,7 @@ fun SettingsScreen() {
             var low by remember { mutableStateOf(Money.format(s.lowThreshold).removeSuffix(" €")) }
             MoneyField(low, { t -> low = t; Money.parse(t)?.takeIf { it > 0 }?.let { v -> setSettings { it.copy(lowThreshold = v) } } }, "Grenze in €")
         }
-        SettingSwitch("Monatsabschluss", "„Dein Oktober: 312 € übrig 🎉“", s.remindPeriodEnd) { v -> setSettings { it.copy(remindPeriodEnd = v) } }
+        SettingSwitch("Monatsabschluss", "„Dein Oktober: 312 € übrig“", s.remindPeriodEnd) { v -> setSettings { it.copy(remindPeriodEnd = v) } }
         if (s.cashMode == CashMode.WALLET) SettingSwitch("Sonntags Bargeld-Check", null, s.remindWallet) { v -> setSettings { it.copy(remindWallet = v) } }
         Spacer(Modifier.height(40.dp))
     }

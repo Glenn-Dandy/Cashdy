@@ -12,6 +12,7 @@ import de.kewl.cashdy.data.Settings
 import de.kewl.cashdy.domain.Budget
 import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.domain.Recurrence
+import de.kewl.cashdy.domain.Reserve
 import de.kewl.cashdy.domain.Salary
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -98,5 +99,68 @@ class BudgetTest {
         assertEquals(315_000L, Budget.summary(next, p, d(2026, 11, 2)).income)
         // Doppelt bestätigt (zwei Tage später) ändert nichts
         assertEquals(next, Salary.startNewPeriod(next, d(2026, 10, 30), null))
+    }
+
+    @Test fun potPaysBillWhenFullySaved() {
+        // Topf läuft seit einem Jahr: Kfz im November kommt komplett aus der Rücklage.
+        val data = AppData(recurring = listOf(car), settings = Settings(potStart = d(2025, 11, 1)))
+        val nov = Budget.summary(data, Periods.calendar(d(2026, 11, 1)), d(2026, 11, 1))
+        assertEquals(0L, nov.fixed)
+        assertEquals(5_000L, nov.reserve)
+        assertEquals(60_000L, nov.potBills.single().amount)
+        assertEquals(60_000L, nov.potBills.single().fromPot)
+    }
+
+    @Test fun potShortInFirstRound() {
+        // Erst im August angefangen: August bis November = 4 x 50 € angespart, 400 € fehlen.
+        val data = AppData(recurring = listOf(car), settings = Settings(potStart = d(2026, 8, 10)))
+        val nov = Budget.summary(data, Periods.calendar(d(2026, 11, 1)), d(2026, 11, 1))
+        assertEquals(40_000L, nov.fixed)
+        assertEquals(20_000L, nov.fixedItems.single().fromPot)
+        val jul = Budget.summary(data, Periods.calendar(d(2026, 7, 1)), d(2026, 7, 1))
+        assertEquals(0L, jul.reserve)
+
+        val st = Reserve.status(data, car, d(2026, 10, 11))!!
+        assertEquals(d(2026, 11, 15), st.nextDue)
+        assertEquals(15_000L, st.savedNow)
+        assertEquals(20_000L, st.savedAtDue)
+        assertEquals(40_000L, st.missing)
+        // Ab dem zweiten Durchlauf reicht der Topf.
+        val next = Reserve.status(data, car, d(2026, 12, 1))!!
+        assertEquals(0L, next.missing)
+    }
+
+    @Test fun roundingRestStaysInPot() {
+        val gez = Recurring("g", "Rundfunk", intervalMonths = 3, firstDue = d(2026, 1, 15), spread = true, prices = listOf(PriceStep(d(2026, 1, 15), 5509)))
+        val data = AppData(recurring = listOf(gez), settings = Settings(potStart = d(2025, 1, 1)))
+        val apr = Budget.summary(data, Periods.calendar(d(2026, 4, 1)), d(2026, 4, 1))
+        assertEquals(0L, apr.fixed) // 3 x 18,36 = 55,08, der eine Cent fällt nicht ins Gewicht
+    }
+
+    @Test fun yearPlan() {
+        val data = AppData(recurring = listOf(salary, rent, car), settings = Settings(potStart = d(2025, 1, 1)))
+        val y = Budget.year(data, 2026, d(2026, 10, 11))
+        assertEquals(12, y.months.size)
+        assertEquals("Januar", y.months.first().period.shortLabel)
+        assertEquals(12 * 85_000L + 60_000L, y.fixedTotal)
+        assertEquals(300_000L - 85_000L - 5_000L, y.months[11].free)
+    }
+
+    @Test fun incomeModeFuturePeriodsAndPot() {
+        val s = Settings(periodMode = PeriodMode.INCOME, periodDay = 27, periodStarts = listOf(d(2026, 9, 27)), potStart = d(2026, 10, 11))
+        val p = Periods.periodFor(d(2027, 3, 5), s)
+        assertEquals(d(2027, 2, 27), p.start)
+        assertEquals(d(2027, 3, 26), p.end)
+        assertEquals(d(2026, 10, 27), Periods.next(Periods.periodFor(d(2026, 10, 11), s), s).start)
+
+        // Kfz am 1.10.: diesmal fehlen 550 €, beim nächsten Mal ist der Topf voll.
+        val kfz = car.copy(firstDue = d(2026, 10, 1), prices = listOf(PriceStep(d(2026, 10, 1), 60_000)))
+        val data = AppData(recurring = listOf(kfz), settings = s)
+        assertEquals(55_000L, Budget.summary(data, Periods.periodFor(d(2026, 10, 11), s), d(2026, 10, 11)).fixed)
+        val st = Reserve.status(data, kfz, d(2026, 10, 11))!!
+        assertEquals(d(2027, 10, 1), st.nextDue)
+        assertEquals(0L, st.savedNow)
+        assertEquals(0L, st.missing)
+        assertEquals(12, Budget.year(data, 2027, d(2026, 10, 11)).months.map { it.period.start }.distinct().size)
     }
 }

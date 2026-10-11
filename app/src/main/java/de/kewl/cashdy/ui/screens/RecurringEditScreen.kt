@@ -160,7 +160,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
         }
 
         if (!income && interval > 1) {
-            SettingSwitch("Auf die Monate verteilen 🐷", "Ich lege jeden Monat ${amountPerMonth(amount, interval)} zurück, damit der Fälligkeitsmonat nicht ins Minus kippt.", spread) { spread = it; spreadTouched = true }
+            SettingSwitch("Auf die Monate verteilen", "Ich lege jeden Monat ${amountPerMonth(amount, interval)} zurück, damit der Fälligkeitsmonat nicht ins Minus kippt.", spread) { spread = it; spreadTouched = true }
         }
         if (income) {
             SettingSwitch("Das ist mein Gehalt", "Im Modus „ab Geldeingang“ beginnt damit dein neuer Monat.", salary) { salary = it }
@@ -177,8 +177,8 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
                         if (prices.size > 1) Text("  ✕", Modifier.clickable { prices = prices - p }, color = c.muted, fontSize = 14.sp)
                     }
                 }
-                Recurrence.changeHint(existing.copy(prices = prices), today)?.let { Hint("📈 ${it.replaceFirstChar { ch -> ch.uppercase() }}") }
-                TextButtonSoft(if (income) "💸 Gehalt ändert sich" else "💸 Preis ändert sich", { priceDialog = true })
+                Recurrence.changeHint(existing.copy(prices = prices), today)?.let { Hint(it.replaceFirstChar { ch -> ch.uppercase() }) }
+                TextButtonSoft(if (income) "Gehalt ändert sich" else "Preis ändert sich", { priceDialog = true })
                 if (income) TextButtonSoft("Nur diesen Monat abweichend", { overrideDialog = true })
                 if (overrides.isNotEmpty()) {
                     overrides.toSortedMap().forEach { (k, v) ->
@@ -193,7 +193,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
 
         val cents = Money.parse(amount)
         val valid = name.isNotBlank() && (prices.isNotEmpty() && existing != null && prices.size > 1 || (cents ?: 0) > 0)
-        BigButton(if (existing == null) "Speichern ✓" else "Änderungen speichern", enabled = valid, modifier = Modifier.fillMaxWidth(), onClick = {
+        BigButton(if (existing == null) "Speichern" else "Änderungen speichern", enabled = valid, modifier = Modifier.fillMaxWidth(), onClick = {
             val finalPrices = when {
                 existing == null -> listOf(PriceStep(firstDue, cents!!))
                 prices.size <= 1 -> listOf(PriceStep(prices.firstOrNull()?.from ?: firstDue, cents ?: prices.first().amount))
@@ -213,7 +213,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
                 data.copy(recurring = cleaned + r)
             }
             CashdyWidget.updateAll(ctx)
-            ui.say("Gespeichert ✓")
+            ui.say("Gespeichert")
             ui.back()
         })
         if (existing != null) {
@@ -222,7 +222,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
                     Store.update { data -> data.copy(recurring = data.recurring.map { if (it.id == existing.id) it.copy(endDate = today) else it }) }
                     ui.say("Beendet. Ab jetzt rechne ich es nicht mehr mit."); ui.back()
                 })
-                TextButtonSoft(if (confirmDelete) "Wirklich löschen?" else "🗑️ Löschen", {
+                TextButtonSoft(if (confirmDelete) "Wirklich löschen?" else "Löschen", {
                     if (!confirmDelete) confirmDelete = true else {
                         Store.update { data -> data.copy(recurring = data.recurring.filterNot { it.id == existing.id }) }
                         ui.say("Gelöscht"); ui.back()
