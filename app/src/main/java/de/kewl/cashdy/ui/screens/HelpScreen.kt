@@ -80,6 +80,7 @@ fun HelpScreen() {
             Topic("Was heißt „Noch frei“?", open == 1, { open = if (open == 1) -1 else 1 }) {
                 Para("Deine Einnahmen im Monat, minus Fixkosten, minus Rücklage, minus alles, was du schon ausgegeben hast. Das, was übrig bleibt, kannst du ohne schlechtes Gewissen ausgeben.")
                 Para("„Heute drin“ ist dieser Betrag geteilt durch die Tage, die der Monat noch hat.")
+                Para("Im ersten Monat rechne ich anders: Statt mit dem ganzen Gehalt starte ich mit deinem Kontostand vom ersten Tag. Was bis dahin abgebucht wurde, steckt schon darin. Gehalt und Fixkosten, die danach noch kommen, rechne ich dazu oder ab. Ab dem nächsten Monat geht es ganz normal weiter.")
             }
             GroupDivider()
             Topic("Wie funktioniert die Rücklage?", open == 2, { open = if (open == 2) -1 else 2 }) {

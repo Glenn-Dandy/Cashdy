@@ -130,6 +130,53 @@ class BudgetTest {
         assertEquals(0L, next.missing)
     }
 
+    @Test fun startMonthUsesBalance() {
+        // Start am 12.10. mit 1.240 € auf dem Konto und 80 € bar. Miete (1.) ist schon abgebucht,
+        // Netflix (15.) und Gehalt (28.) kommen noch. Die Kfz-Rücklage fängt erst im November an.
+        val strom = Recurring("st", "Strom", firstDue = d(2026, 1, 12), prices = listOf(PriceStep(d(2026, 1, 12), 9_500)))
+        val data = AppData(
+            recurring = listOf(salary, rent, netflix, car, strom),
+            entries = listOf(
+                Entry("c", 8_000, d(2026, 10, 12), EntryKind.CASH_START, method = PayMethod.CASH),
+                Entry("old", 5_000, d(2026, 10, 5), EntryKind.EXPENSE, "food"), // nachgetragen, steckt im Kontostand
+                Entry("e", 2_000, d(2026, 10, 13), EntryKind.EXPENSE, "food"),
+            ),
+            settings = Settings(startDay = d(2026, 10, 12), startBalance = 124_000, potStart = d(2026, 11, 1)),
+        )
+        val oct = Budget.summary(data, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 13))
+        assertEquals(132_000L, oct.startMoney)
+        assertEquals(132_000L + 300_000, oct.income)
+        assertEquals(1_399L, oct.fixed) // Strom am Starttag gilt als abgebucht
+        assertEquals(0L, oct.reserve)
+        assertEquals(2_000L, oct.spent)
+        assertEquals(432_000L - 1_399 - 2_000, oct.free)
+
+        // Ab November ganz normal.
+        val nov = Budget.summary(data, Periods.calendar(d(2026, 11, 1)), d(2026, 11, 1))
+        assertEquals(null, nov.startMoney)
+        assertEquals(300_000L, nov.income)
+        // Kfz am 15.11.: im Topf ist erst der November-Anteil, der Rest zählt im November.
+        assertEquals(85_000L + 1_399 + 9_500 + 55_000, nov.fixed)
+        assertEquals(5_000L, nov.reserve)
+
+        // Im Einfach-Modus zählt das Bargeld nicht dazu, im Minus geht es auch.
+        val simple = data.copy(settings = data.settings.copy(cashMode = CashMode.SIMPLE, startBalance = -20_000))
+        assertEquals(-20_000L, Budget.summary(simple, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 13)).startMoney)
+    }
+
+    @Test fun startMonthUntilNextSalary() {
+        // Monat ab Gehaltseingang: Start am 12.10., letztes Gehalt kam am 28.9. Der Startmonat
+        // läuft bis zum nächsten Gehalt, das ist dann schon der nächste Zeitraum.
+        val settings = Settings(periodMode = PeriodMode.INCOME, periodDay = 28, periodStarts = listOf(d(2026, 9, 28)),
+            startDay = d(2026, 10, 12), startBalance = 50_000)
+        val data = AppData(recurring = listOf(salary, rent), settings = settings)
+        val p = Periods.periodFor(d(2026, 10, 12), settings)
+        val s = Budget.summary(data, p, d(2026, 10, 12))
+        assertEquals(50_000L, s.income)
+        assertEquals(0L, s.fixed)
+        assertEquals(50_000L, s.free)
+    }
+
     @Test fun roundingRestStaysInPot() {
         val gez = Recurring("g", "Rundfunk", intervalMonths = 3, firstDue = d(2026, 1, 15), spread = true, prices = listOf(PriceStep(d(2026, 1, 15), 5509)))
         val data = AppData(recurring = listOf(gez), settings = Settings(potStart = d(2025, 1, 1)))

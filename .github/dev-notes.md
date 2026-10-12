@@ -12,6 +12,7 @@
 - Kassenbon: Summe wird zuverlässig erkannt, auch wenn Text und Betrag weit auseinander stehen. Die anderen Beträge vom Bon lassen sich antippen
 - Kassenbon: Karte oder bar wird an der Zahlungszeile erkannt („gegeben Visa“, „Kreditkarte“)
 - Neue Hilfe unter Mehr, mit Anleitung zum Einschalten der Zahlungserkennung („Eingeschränkte Einstellungen zulassen“)
-- Beim Einrichten fragt Cashdy bei Jahres- und Quartalskosten nach der nächsten Abbuchung
+- Startmonat: Beim Einrichten fragt Cashdy nach dem Kontostand. Der erste Monat rechnet damit: Was bis zum Starttag abgebucht wurde oder reinkam, steckt schon darin, Gehalt und Fixkosten danach kommen dazu oder gehen ab. Ab dem nächsten Monat wie gewohnt. Die Rücklage fängt im ersten vollen Monat an
+- Beim Einrichten fragt Cashdy bei allen Fixkosten nach dem Abbuchungstag
 - Datenschutz-Text ohne Nextcloud
 - Behoben: Im Modus „ab Geldeingang“ wurden Monate in der Zukunft falsch berechnet

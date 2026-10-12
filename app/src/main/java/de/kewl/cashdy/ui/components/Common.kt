@@ -57,6 +57,7 @@ import de.kewl.cashdy.data.Entry
 import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.data.PayMethod
 import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.domain.Summary
 import de.kewl.cashdy.ui.theme.C
 import de.kewl.cashdy.ui.theme.Fredoka
 import java.time.LocalDate
@@ -266,6 +267,29 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
         if (value.isNotEmpty()) {
             IconButton(onClick = { onChange("") }) { Icon(Icons.Rounded.Close, "Leeren", tint = c.muted) }
         }
+    }
+}
+
+/**
+ * Erste Zeile der Rechnung: Einnahmen. Im Startmonat stattdessen der Kontostand beim Start und
+ * darunter, was bis zum Monatsende noch reinkommt.
+ */
+@Composable
+fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (() -> Unit)? = null) {
+    val start = sum.startMoney
+    if (start == null || startDay == null) {
+        ValueRow("Einnahmen", Money.format(sum.income), onClick = onClick)
+        return
+    }
+    val dm = DateTimeFormatter.ofPattern("d.M.")
+    ValueRow(
+        (if (withCash) "Konto und Bargeld am " else "Kontostand am ") + startDay.format(dm), Money.format(start),
+        note = "Startmonat, ab dem ${sum.period.end.plusDays(1).format(dm)} rechne ich normal", onClick = onClick,
+    )
+    val rest = sum.income - start
+    if (rest != 0L) {
+        GroupDivider()
+        ValueRow("Kommt noch rein", Money.format(rest), onClick = onClick)
     }
 }
 

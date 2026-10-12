@@ -53,6 +53,7 @@ import de.kewl.cashdy.ui.components.EntryGroup
 import de.kewl.cashdy.ui.components.Group
 import de.kewl.cashdy.ui.components.GroupDivider
 import de.kewl.cashdy.ui.components.Hint
+import de.kewl.cashdy.ui.components.IncomeRows
 import de.kewl.cashdy.ui.components.ValueRow
 import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.domain.Period
@@ -120,7 +121,7 @@ fun MonthScreen() {
         }
 
         Group {
-            ValueRow("Einnahmen", Money.format(sum.income))
+            IncomeRows(sum, d.settings.startDay, d.settings.cashMode == CashMode.WALLET)
             GroupDivider()
             ValueRow("Fest", "− " + Money.format(sum.fixed))
             if (sum.reserve > 0) {

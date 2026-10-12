@@ -86,10 +86,12 @@ fun OnboardingScreen(onDone: () -> Unit) {
     val fixed = remember { mutableStateListOf<QuickFixed>() }
     var cashMode by remember { mutableStateOf(CashMode.WALLET) }
     var wallet by remember { mutableStateOf("") }
+    var balance by remember { mutableStateOf("") }
+    var minus by remember { mutableStateOf(false) }
     var askFixed by remember { mutableStateOf<Triple<String, String, Int>?>(null) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val listenerOn = rememberListenerEnabled()
-    val steps = 5
+    val steps = 6
 
     fun finish() {
         val today = LocalDate.now()
@@ -113,14 +115,18 @@ fun OnboardingScreen(onDone: () -> Unit) {
             val entries = Money.parse(wallet)?.takeIf { it > 0 && cashMode == CashMode.WALLET }?.let {
                 listOf(Entry(Store.newId(), it, today, EntryKind.CASH_START, method = PayMethod.CASH, note = "Startbestand"))
             } ?: emptyList()
+            val start = Money.parse(balance)?.let { if (minus) -it else it }
+            val settings = d.settings.copy(
+                onboarded = true, name = name.trim(), periodMode = mode, periodDay = if (mode == PeriodMode.CALENDAR) 1 else salaryDay,
+                periodStarts = if (mode == PeriodMode.INCOME) listOf(lastSalaryDay) else emptyList(), cashMode = cashMode,
+                startDay = start?.let { today }, startBalance = start,
+            )
+            // Mit Kontostand fängt die Rücklage erst im ersten vollen Monat an.
+            val potStart = if (start == null) today else Periods.next(Periods.periodFor(today, settings), settings).start
             d.copy(
                 recurring = d.recurring + rec,
                 entries = d.entries + entries,
-                settings = d.settings.copy(
-                    onboarded = true, name = name.trim(), periodMode = mode, periodDay = if (mode == PeriodMode.CALENDAR) 1 else salaryDay,
-                    periodStarts = if (mode == PeriodMode.INCOME) listOf(lastSalaryDay) else emptyList(), cashMode = cashMode,
-                    potStart = today,
-                ),
+                settings = settings.copy(potStart = potStart),
             )
         }
         CashdyWidget.updateAll(ctx)
@@ -175,6 +181,23 @@ fun OnboardingScreen(onDone: () -> Unit) {
                     }
                     2 -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            Mascot(Mood.HAPPY, size = 70.dp)
+                            Spacer(Modifier.width(8.dp))
+                            SpeechBubble("Wie viel ist gerade auf deinem Konto?", Modifier.weight(1f))
+                        }
+                        MoneyField(balance, { balance = it }, "Kontostand heute in €")
+                        Pill(if (minus) "✓ Konto ist im Minus" else "Konto ist im Minus", minus, { minus = !minus })
+                        Hint(
+                            "Damit dein erster Monat gleich stimmt, rechne ich bis " +
+                                when (mode) { PeriodMode.CALENDAR -> "zum Monatsende"; PeriodMode.FIXED_DAY -> "zum nächsten $salaryDay."; PeriodMode.INCOME -> "zum nächsten Gehalt" } +
+                                " mit diesem Betrag. " +
+                                "Was bis heute abgebucht wurde oder reinkam, steckt schon darin. Was danach noch kommt, Gehalt oder Fixkosten, " +
+                                "rechne ich dazu oder ab. Darum ist bei den Fixkosten der Abbuchungstag wichtig."
+                        )
+                        Hint("Ab dem nächsten Monat rechne ich ganz normal mit deinem Gehalt. Leer lassen geht auch, dann zählt schon jetzt das ganze Gehalt.")
+                    }
+                    3 -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Mascot(Mood.OK, size = 70.dp)
                             Spacer(Modifier.width(8.dp))
                             SpeechBubble("Was geht jeden Monat fest weg? Tipp an, was du hast.", Modifier.weight(1f))
@@ -196,7 +219,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                         }
                         Hint("Später kannst du unter „Fest“ einen Kontoauszug (CSV) einlesen, dann finde ich alles Regelmäßige von selbst.")
                     }
-                    3 -> {
+                    4 -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Mascot(Mood.HAPPY, size = 70.dp)
                             Spacer(Modifier.width(8.dp))
@@ -212,7 +235,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                         }
                         if (cashMode == CashMode.WALLET) MoneyField(wallet, { wallet = it }, "Wie viel Bargeld hast du gerade? (€)")
                     }
-                    4 -> {
+                    5 -> {
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Mascot(Mood.PARTY, size = 110.dp) }
                         Text("Fast fertig! ✨", style = MaterialTheme.typography.headlineMedium, color = c.fg)
                         Card {
@@ -254,8 +277,8 @@ fun OnboardingScreen(onDone: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (n.isBlank()) SoftField(title, { title = it }, "Name")
                     MoneyField(amount, { amount = it }, if (m == 1) "Betrag pro Monat (€)" else if (m == 12) "Betrag pro Jahr (€)" else "Betrag alle $m Monate (€)")
-                    if (m > 1) Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Nächste Abbuchung", style = MaterialTheme.typography.bodyMedium, color = c.muted, modifier = Modifier.weight(1f))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(if (m == 1) "Abbuchung am" else "Nächste Abbuchung", style = MaterialTheme.typography.bodyMedium, color = c.muted, modifier = Modifier.weight(1f))
                         DateChip(due, { pickDue = true })
                     }
                 }

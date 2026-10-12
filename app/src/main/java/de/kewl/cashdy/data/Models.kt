@@ -173,6 +173,13 @@ data class Settings(
      * Rechnung im ersten Durchlauf ist also nur teilweise angespart. Leer = schon immer.
      */
     val potStart: Day? = null,
+    /**
+     * Startmonat: Am [startDay] stand [startBalance] auf dem Konto. Im Zeitraum mit diesem Tag
+     * rechnet Cashdy mit dem Kontostand statt mit dem ganzen Gehalt. Was bis einschließlich
+     * [startDay] gebucht wurde, steckt schon im Kontostand. Leer = normal rechnen.
+     */
+    val startDay: Day? = null,
+    val startBalance: Cents? = null,
     /** Zuletzt gewählte Ansichten, damit sie beim nächsten Öffnen wieder so sind. */
     val fixedView: FixedView = FixedView.CATEGORY,
     val monthView: MonthView = MonthView.CATEGORY,

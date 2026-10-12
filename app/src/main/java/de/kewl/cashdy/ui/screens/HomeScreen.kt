@@ -51,6 +51,7 @@ import de.kewl.cashdy.ui.components.EntryGroup
 import de.kewl.cashdy.ui.components.Group
 import de.kewl.cashdy.ui.components.GroupDivider
 import de.kewl.cashdy.ui.components.MenuRow
+import de.kewl.cashdy.ui.components.IncomeRows
 import de.kewl.cashdy.ui.components.ValueRow
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.Mascot
@@ -159,7 +160,7 @@ fun HomeScreen() {
 
         // Die Rechnung dahinter, in vier Zeilen.
         Group {
-            ValueRow("Einnahmen", Money.format(sum.income), onClick = { ui.go(Route.Fixed) })
+            IncomeRows(sum, d.settings.startDay, d.settings.cashMode == CashMode.WALLET, onClick = { ui.go(Route.Fixed) })
             GroupDivider()
             ValueRow("Fest", "− " + Money.format(sum.fixed), onClick = { ui.go(Route.Fixed) })
             if (sum.reserve > 0) {
