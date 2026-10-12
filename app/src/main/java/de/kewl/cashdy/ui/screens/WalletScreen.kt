@@ -68,7 +68,7 @@ fun WalletScreen() {
                     Text("Bargeld laut mir", style = MaterialTheme.typography.bodyMedium, color = c.muted)
                     Text(Money.format(wallet), style = MaterialTheme.typography.displayLarge, color = c.fg)
                 }
-                Mascot(if (wallet >= 0) Mood.HAPPY else Mood.WORRIED, size = 70.dp, animate = false)
+                Mascot(if (wallet >= 0) Mood.HAPPY else Mood.HOPE, size = 70.dp, animate = false)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -145,7 +145,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                 when (s) {
                     0 -> {
                         Spacer(Modifier.height(20.dp))
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Mascot(Mood.PARTY, size = 150.dp) }
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Mascot(Mood.HAPPY, size = 150.dp, wave = true) }
                         Text("Hallo! Ich bin Cashdy 👋", style = MaterialTheme.typography.headlineLarge, color = c.fg, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         Text(
                             "Ich zeig dir jeden Tag, wie viel Geld du noch frei hast. Ohne Bank-Login, ohne Schnickschnack. In einer Minute sind wir startklar.",

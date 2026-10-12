@@ -20,6 +20,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.ui.components.MascotEvents
 import de.kewl.cashdy.ui.components.RowTitle
 import de.kewl.cashdy.ui.components.dayLabel
 import androidx.compose.foundation.background
@@ -257,6 +258,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                         }
                         CashdyWidget.updateAll(ctx)
                         ui.say(if (editing != null) "Gespeichert" else "Eingetragen")
+                        if (editing == null) MascotEvents.hop()
                         onDismiss()
                     },
                 )

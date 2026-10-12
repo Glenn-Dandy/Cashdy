@@ -61,15 +61,40 @@ import de.kewl.cashdy.ui.components.Mood
 import de.kewl.cashdy.ui.components.SectionTitle
 import de.kewl.cashdy.ui.theme.C
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
-data class MascotLine(val mood: Mood, val text: String)
+/** Was die Münze sagt. [show]: wichtig genug, um es unter der Karte zu zeigen. */
+data class MascotLine(val mood: Mood, val text: String, val show: Boolean = false)
 
+/**
+ * Wird es knapp, macht die Münze Mut statt zu warnen: ehrlich sagen, wie es steht, einen
+ * machbaren Weg zeigen und kleine Erfolge feiern.
+ */
 fun mascotSays(d: AppData, sum: Summary, today: LocalDate): MascotLine {
     val p = sum.period
-    if (sum.income == 0L) return MascotLine(Mood.OK, "Trag unter „Fest“ dein Gehalt ein, dann rechne ich los.")
-    if (sum.free < 0) return MascotLine(Mood.WORRIED, "Hui, ${Money.format(-sum.free)} drüber. Kein Drama, nächsten Monat holen wir das rein.")
-    if (sum.daysLeft > 3 && sum.perDay in 1..800) return MascotLine(Mood.WORRIED, "Wird etwas knapp: nur noch ${Money.format(sum.perDay)} pro Tag. Augen auf!")
+    if (sum.income == 0L) return MascotLine(Mood.OK, "Trag unter „Fest“ dein Gehalt ein, dann rechne ich los.", true)
+    if (sum.free < 0) return MascotLine(
+        Mood.HOPE,
+        "Diesen Monat sind es ${Money.format(-sum.free)} zu viel. Das passiert, und es ist kein Weltuntergang. " +
+            "Am ${p.end.plusDays(1).format(DateTimeFormatter.ofPattern("d.M."))} fangen wir frisch an. Du schaffst das!",
+        true,
+    )
+    val cm = d.settings.cashMode
+    val tight = sum.daysLeft > 3 && sum.perDay in 1..800
+    val todays = sum.entries.filter { it.date == today }
+    val todaySpent = todays.sumOf { Budget.spendingValue(it, cm) }
+    val todayBudget = if (sum.daysLeft > 0) (sum.free + todaySpent) / sum.daysLeft else 0
+    if (tight && todays.any { Budget.spendingValue(it, cm) > 0 } && todaySpent <= todayBudget) {
+        return MascotLine(Mood.HAPPY, "Heute nur ${Money.format(todaySpent)} ausgegeben. Stark, genau so geht's!", true)
+    }
+    val streak = daysInBudget(d, sum, today)
+    if (streak >= 3) return MascotLine(Mood.HAPPY, "Schon $streak Tage am Stück im Rahmen geblieben. Ich bin stolz auf dich!", true)
+    if (tight) return MascotLine(
+        Mood.HOPE,
+        "Wird eng, aber das kriegen wir hin. Mit ${Money.format(sum.perDay)} am Tag kommst du bis zum ${p.end.dayOfMonth}. durch. Ich bin dabei!",
+        true,
+    )
     if (sum.entries.isEmpty()) return MascotLine(Mood.SLEEPY, "Noch ruhig hier. Was hast du heute gekauft?")
     val dayIndex = ChronoUnit.DAYS.between(p.start, today)
     val prev = Periods.previous(p, d.settings)
@@ -82,6 +107,27 @@ fun mascotSays(d: AppData, sum: Summary, today: LocalDate): MascotLine {
         sum.perDay >= 3000 -> MascotLine(Mood.HAPPY, "Alles entspannt. Heute sind ${Money.short(sum.perDay)} drin.")
         else -> MascotLine(Mood.OK, "Alles im grünen Bereich. Weiter so!")
     }
+}
+
+/**
+ * Tage am Stück bis gestern, an denen etwas eingetragen wurde und die Ausgaben im Rahmen
+ * blieben: nicht mehr als das, was an dem Morgen pro Tag frei war.
+ */
+private fun daysInBudget(d: AppData, sum: Summary, today: LocalDate): Int {
+    val cm = d.settings.cashMode
+    val pot = sum.free + sum.spent
+    var n = 0
+    var day = today.minusDays(1)
+    while (!day.isBefore(sum.period.start)) {
+        val values = sum.entries.filter { it.date == day }.map { Budget.spendingValue(it, cm) }
+        if (values.none { it > 0 }) break
+        val before = sum.entries.filter { it.date.isBefore(day) }.sumOf { Budget.spendingValue(it, cm) }
+        val left = ChronoUnit.DAYS.between(day, sum.period.end) + 1
+        if (values.sum() > (pot - before) / left) break
+        n++
+        day = day.minusDays(1)
+    }
+    return n
 }
 
 @Composable
@@ -111,7 +157,11 @@ fun HomeScreen() {
         val prevSum = Budget.summary(d, prev, today)
         if (prevSum.income > 0 && prevSum.free > 0 && prev.key !in d.settings.celebrated && (prevSum.entries.isNotEmpty())) {
             ui.confettiKey++
-            ui.say("${prev.shortLabel}: ${Money.format(prevSum.free)} übrig!")
+            val before = Budget.summary(d, Periods.previous(prev, d.settings), today)
+            ui.say(
+                if (before.income > 0 && before.free < 0) "Du hast es geschafft! Erst drüber, jetzt ${prev.shortLabel} im Plus. Das war richtig stark."
+                else "${prev.shortLabel}: ${Money.format(prevSum.free)} übrig!"
+            )
             Store.update { it.copy(settings = it.settings.copy(celebrated = it.settings.celebrated + prev.key)) }
         }
     }
@@ -158,7 +208,7 @@ fun HomeScreen() {
             Mascot(line.mood, Modifier.align(Alignment.TopEnd), size = 64.dp)
         }
         // Das Maskottchen meldet sich nur, wenn es etwas zu sagen gibt.
-        if (line.mood == Mood.WORRIED || sum.income == 0L) Hint(line.text, Modifier.padding(horizontal = 4.dp))
+        if (line.show) Hint(line.text, Modifier.padding(horizontal = 4.dp))
 
         // Kredit abbezahlt: einmal richtig feiern.
         d.recurring.firstOrNull { r ->

@@ -16,8 +16,12 @@ App-Texte, Changelog und Release-Notizen.
 
 ## Stil der App
 
+Für Menschen mit Geldsorgen, die von komplizierten oder teuren Finanz-Apps erschlagen
+werden. Alles muss ohne Vorwissen verständlich sein. Wird es knapp, macht die Münze Mut,
+statt zu warnen.
+
 Verspielt und einfach, nie wie ein Finanztool. Alltagssprache („Noch frei", „fest",
-„Nö"), Münz-Maskottchen, Farben Violett `#6C4DF6` + Apricot `#FFB37A` + Vanille
+„Nö"), Münz-Maskottchen in Honiggold `#FFC94D` mit Rand `#F0A52A`, Farben Violett `#6C4DF6` + Apricot `#FFB37A` + Vanille
 `#FFF1BF`, Schriften Fredoka (Überschriften, Zahlen) und Nunito (Text). Kein Mint
 (Finanzguru-Look). Vorerst nur Deutsch, Texte trotzdem so schreiben, dass sie später
 übersetzbar bleiben. Details im Konzept: `docs/KONZEPT.md`.
