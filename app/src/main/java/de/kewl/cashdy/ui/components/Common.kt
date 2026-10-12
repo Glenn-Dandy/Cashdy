@@ -5,6 +5,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +24,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -207,6 +214,58 @@ fun ValueRow(label: String, value: String, strong: Boolean = false, valueColor: 
             if (note != null) Text(note, style = MaterialTheme.typography.bodySmall, color = C.colors.muted)
         }
         Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = if (strong) FontWeight.SemiBold else FontWeight.Medium, color = valueColor)
+    }
+}
+
+/**
+ * Kopfzeile einer zuklappbaren Gruppe: Name, darunter eine kleine Notiz, rechts die Summe und
+ * der Pfeil. [bar] (0 bis 1) zeigt darunter einen dünnen Balken, z. B. Anteil an allen Ausgaben.
+ */
+@Composable
+fun FoldRow(
+    title: String, value: String, expanded: Boolean, note: String? = null,
+    valueColor: Color = C.colors.fg, bar: Float? = null, onClick: () -> Unit,
+) {
+    val c = C.colors
+    Column(
+        Modifier.fillMaxWidth().background(if (expanded) c.soft2 else c.surface)
+            .clickable(onClick = onClick).padding(start = 16.dp, end = 10.dp, top = 11.dp, bottom = 11.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, style = RowTitle, color = c.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (note != null) Text(note, style = MaterialTheme.typography.bodySmall, color = c.muted)
+            }
+            Text(value, style = MaterialTheme.typography.titleSmall, color = valueColor)
+            Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, null, tint = c.muted, modifier = Modifier.padding(start = 4.dp))
+        }
+        if (bar != null) {
+            Box(Modifier.padding(top = 6.dp, end = 28.dp).fillMaxWidth().height(4.dp).clip(RoundedCornerShape(50)).background(c.line)) {
+                Box(Modifier.fillMaxWidth(bar.coerceIn(0f, 1f)).height(4.dp).clip(RoundedCornerShape(50)).background(c.primary))
+            }
+        }
+    }
+}
+
+/** Schlichtes Suchfeld mit Lupe und Löschen-Kreuz. */
+@Composable
+fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+    val c = C.colors
+    Row(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(c.surface).padding(start = 14.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.Search, null, tint = c.muted, modifier = Modifier.size(20.dp))
+        Box(Modifier.weight(1f).padding(horizontal = 10.dp, vertical = 13.dp)) {
+            if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = c.muted)
+            BasicTextField(
+                value, onChange, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = c.fg), cursorBrush = SolidColor(c.primary),
+            )
+        }
+        if (value.isNotEmpty()) {
+            IconButton(onClick = { onChange("") }) { Icon(Icons.Rounded.Close, "Leeren", tint = c.muted) }
+        }
     }
 }
 

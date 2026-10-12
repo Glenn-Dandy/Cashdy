@@ -24,7 +24,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import de.kewl.cashdy.data.Cents
+import de.kewl.cashdy.data.FixedView
 import de.kewl.cashdy.data.Recurring
+import de.kewl.cashdy.data.category
+import de.kewl.cashdy.ui.components.FoldRow
+import de.kewl.cashdy.ui.components.Pill
+import de.kewl.cashdy.ui.components.SearchField
 import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.domain.Money
 import de.kewl.cashdy.domain.PotStatus
@@ -36,8 +54,6 @@ import de.kewl.cashdy.ui.components.RowTitle
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.Group
 import de.kewl.cashdy.ui.components.GroupDivider
-import de.kewl.cashdy.ui.components.MenuRow
-import de.kewl.cashdy.ui.components.SectionTitle
 import de.kewl.cashdy.ui.components.shortDate
 import de.kewl.cashdy.ui.theme.C
 import java.time.LocalDate
@@ -48,76 +64,137 @@ fun FixedScreen() {
     val d by Store.data.collectAsState()
     val today = LocalDate.now()
     val c = C.colors
+    val view = d.settings.fixedView
+    var query by rememberSaveable { mutableStateOf("") }
+    val open = remember { mutableStateMapOf<String, Boolean>() }
+    var addMenu by remember { mutableStateOf(false) }
 
+    val q = query.trim()
+    fun matches(r: Recurring) = q.isEmpty() || r.name.contains(q, true) || (d.category(r.categoryId)?.name ?: NO_CATEGORY).contains(q, true)
     val active = d.recurring.filter { it.endDate == null || !it.endDate.isBefore(today) }
-    val ended = d.recurring - active.toSet()
-    val incomes = active.filter { it.income }
-    val monthly = active.filter { !it.income && !(it.spread && it.intervalMonths > 1) }
-    val spread = active.filter { !it.income && it.spread && it.intervalMonths > 1 }
-    val perMonth = monthly.sumOf { Recurrence.currentPrice(it, today) / it.intervalMonths } + spread.sumOf { Recurrence.monthlyShare(it, today) }
-    val pots = remember(d, today) { Reserve.all(d, today) }
+    val ended = (d.recurring - active.toSet()).filter(::matches)
+    val incomes = active.filter { it.income && matches(it) }
+    val costs = active.filter { !it.income && matches(it) }
+    val pots = remember(d, today) { Reserve.all(d, today).associateBy { it.recurring.id } }
+    fun perMonth(r: Recurring): Cents =
+        if (r.spread && r.intervalMonths > 1) Recurrence.monthlyShare(r, today) else Recurrence.currentPrice(r, today) / r.intervalMonths
+    val costsMonth = costs.sumOf(::perMonth)
+    val potMonth = costs.filter { it.spread && it.intervalMonths > 1 }.sumOf(::perMonth)
+    val row: @Composable (Recurring) -> Unit = { r ->
+        val go = { ui.go(Route.RecurringEdit(r.id, r.income)) }
+        val pot = pots[r.id]
+        if (pot != null) PotRow(pot, go) else RecurringRow(r, today, go)
+    }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Spacer(Modifier.height(8.dp))
-        Text("Fest", style = MaterialTheme.typography.headlineMedium, color = c.fg)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Fest", style = MaterialTheme.typography.headlineMedium, color = c.fg, modifier = Modifier.weight(1f))
+            Box {
+                Box(
+                    Modifier.size(44.dp).clip(CircleShape).background(c.primary).clickable { addMenu = true },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Rounded.Add, "Hinzufügen", tint = c.onPrimary) }
+                DropdownMenu(addMenu, { addMenu = false }, containerColor = c.surface) {
+                    DropdownMenuItem({ Text("Fixkosten", style = RowTitle, color = c.fg) }, { addMenu = false; ui.go(Route.RecurringEdit(null, income = false)) })
+                    DropdownMenuItem({ Text("Einnahme", style = RowTitle, color = c.fg) }, { addMenu = false; ui.go(Route.RecurringEdit(null, income = true)) })
+                    DropdownMenuItem({ Text("Aus Kontoauszug finden", style = RowTitle, color = c.fg) }, { addMenu = false; ui.go(Route.Import()) })
+                }
+            }
+        }
+
         Group {
             Column(Modifier.padding(16.dp)) {
-                Text("Pro Monat fest verplant", style = MaterialTheme.typography.bodyMedium, color = c.muted)
-                Text(Money.format(perMonth), style = MaterialTheme.typography.headlineMedium, color = c.fg)
-                Text("${Money.format(perMonth * 12)} im Jahr", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                val onlyIncome = q.isNotEmpty() && costs.isEmpty() && incomes.isNotEmpty()
+                val count = if (onlyIncome) incomes.size else costs.size
+                Text(
+                    when {
+                        q.isEmpty() -> "Pro Monat fest verplant"
+                        count == 0 -> "„$q“: nichts gefunden"
+                        else -> "„$q“: $count Posten, pro Monat"
+                    },
+                    style = MaterialTheme.typography.bodyMedium, color = c.muted,
+                )
+                val total = if (onlyIncome) incomes.sumOf(::perMonth) else costsMonth
+                Text(Money.format(total), style = MaterialTheme.typography.headlineMedium, color = if (onlyIncome) c.good else c.fg)
+                Text(
+                    "${Money.format(total * 12)} im Jahr" + if (potMonth > 0 && !onlyIncome) ", davon ${Money.format(potMonth)} pro Monat Rücklage" else "",
+                    style = MaterialTheme.typography.bodySmall, color = c.muted,
+                )
             }
         }
 
         if (d.recurring.isEmpty()) {
-            Hint("Hier kommen Miete, Handy, Netflix, Versicherungen und dein Gehalt rein. Einmal eintragen, ich rechne jeden Monat automatisch mit.")
-        }
-
-        if (incomes.isNotEmpty()) {
-            SectionTitle("Einnahmen")
-            RecurringGroup(incomes, today) { ui.go(Route.RecurringEdit(it.id, true)) }
-        }
-        if (monthly.isNotEmpty()) {
-            SectionTitle("Fixkosten")
-            RecurringGroup(monthly.sortedByDescending { Recurrence.currentPrice(it, today) }, today) { ui.go(Route.RecurringEdit(it.id)) }
-        }
-        if (pots.isNotEmpty()) {
-            SectionTitle("Rücklage, ${Money.format(pots.sumOf { it.savedNow })} angespart")
-            Group {
-                pots.forEachIndexed { i, p ->
-                    if (i > 0) GroupDivider()
-                    PotRow(p) { ui.go(Route.RecurringEdit(p.recurring.id)) }
+            Hint("Hier kommen Miete, Handy, Netflix, Versicherungen und dein Gehalt rein. Einmal eintragen, ich rechne jeden Monat automatisch mit. Tipp oben auf Plus.")
+        } else {
+            SearchField(query, { query = it }, "Name oder Kategorie suchen")
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(FixedView.CATEGORY to "Kategorie", FixedView.NAME to "Name", FixedView.DUE to "Fällig").forEach { (v, label) ->
+                    Pill(label, view == v, { Store.update { it.copy(settings = it.settings.copy(fixedView = v)) } })
                 }
             }
-            Hint("Seltene Kosten werden auf die Monate verteilt. Kommt die Rechnung, bezahlt sie die Rücklage.")
-        }
-        if (ended.isNotEmpty()) {
-            SectionTitle("Beendet")
-            RecurringGroup(ended, today) { ui.go(Route.RecurringEdit(it.id, it.income)) }
         }
 
-        Group {
-            MenuRow("Fixkosten hinzufügen") { ui.go(Route.RecurringEdit(null, income = false)) }
-            GroupDivider()
-            MenuRow("Einnahme hinzufügen", "Gehalt, Kindergeld, Miete von Untermietern") { ui.go(Route.RecurringEdit(null, income = true)) }
-            GroupDivider()
-            MenuRow("Aus Kontoauszug finden", "Ich schlage Regelmäßiges vor") { ui.go(Route.Import()) }
+        // Beim Suchen gehen die Gruppen mit Treffern von selbst auf.
+        fun isOpen(key: String) = open[key] ?: (q.isNotEmpty())
+        fun toggle(key: String) { open[key] = !isOpen(key) }
+
+        if (costs.isNotEmpty()) {
+            when (view) {
+                FixedView.CATEGORY -> {
+                    val groups = costs.groupBy { it.categoryId?.takeIf { id -> d.category(id) != null } }
+                        .map { (cat, rs) -> Triple(cat, rs, rs.sumOf(::perMonth)) }
+                        .sortedWith(compareBy<Triple<String?, List<Recurring>, Cents>> { it.first == null }.thenByDescending { it.third })
+                    Group {
+                        groups.forEachIndexed { i, (cat, rs, sum) ->
+                            if (i > 0) GroupDivider()
+                            val key = "c:" + (cat ?: "")
+                            FoldRow(
+                                d.category(cat)?.name ?: NO_CATEGORY, Money.format(sum), isOpen(key),
+                                note = "${rs.size} Posten, ${Money.format(sum * 12)} im Jahr",
+                            ) { toggle(key) }
+                            AnimatedVisibility(isOpen(key)) {
+                                Column {
+                                    rs.sortedByDescending(::perMonth).forEach { r -> GroupDivider(); row(r) }
+                                }
+                            }
+                        }
+                    }
+                }
+                FixedView.NAME -> Group {
+                    costs.sortedBy { it.name.lowercase() }.forEachIndexed { i, r -> if (i > 0) GroupDivider(); row(r) }
+                }
+                FixedView.DUE -> Group {
+                    costs.sortedBy { Recurrence.nextDue(it, today) ?: LocalDate.MAX }.forEachIndexed { i, r -> if (i > 0) GroupDivider(); row(r) }
+                }
+            }
+        }
+
+        if (incomes.isNotEmpty() || ended.isNotEmpty()) {
+            Group {
+                if (incomes.isNotEmpty()) {
+                    FoldRow("Einnahmen", Money.format(incomes.sumOf(::perMonth)), isOpen("in"), valueColor = c.good, note = "pro Monat") { toggle("in") }
+                    AnimatedVisibility(isOpen("in")) {
+                        Column { incomes.sortedByDescending(::perMonth).forEach { r -> GroupDivider(); row(r) } }
+                    }
+                }
+                if (ended.isNotEmpty()) {
+                    if (incomes.isNotEmpty()) GroupDivider()
+                    FoldRow("Beendet", "${ended.size}", isOpen("end"), valueColor = c.muted) { toggle("end") }
+                    AnimatedVisibility(isOpen("end")) {
+                        Column { ended.sortedByDescending { it.endDate }.forEach { r -> GroupDivider(); RecurringRow(r, today) { ui.go(Route.RecurringEdit(r.id, r.income)) } } }
+                    }
+                }
+            }
         }
         Spacer(Modifier.height(110.dp))
     }
 }
 
-@Composable
-private fun RecurringGroup(items: List<Recurring>, today: LocalDate, onClick: (Recurring) -> Unit) {
-    Group {
-        items.forEachIndexed { i, r ->
-            if (i > 0) GroupDivider()
-            RecurringRow(r, today) { onClick(r) }
-        }
-    }
-}
+private const val NO_CATEGORY = "Ohne Kategorie"
 
 @Composable
 private fun RecurringRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {

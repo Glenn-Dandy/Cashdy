@@ -33,7 +33,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.runtime.mutableStateMapOf
+import de.kewl.cashdy.data.CashMode
+import de.kewl.cashdy.data.Cents
+import de.kewl.cashdy.data.Entry
+import de.kewl.cashdy.data.MonthView
 import de.kewl.cashdy.data.Store
+import de.kewl.cashdy.ui.components.EntryRow
+import de.kewl.cashdy.ui.components.FoldRow
 import de.kewl.cashdy.data.category
 import de.kewl.cashdy.domain.Budget
 import de.kewl.cashdy.domain.Money
@@ -46,7 +54,6 @@ import de.kewl.cashdy.ui.components.Group
 import de.kewl.cashdy.ui.components.GroupDivider
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.ValueRow
-import de.kewl.cashdy.data.DefaultCategories
 import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.domain.Period
 import de.kewl.cashdy.domain.Recurrence
@@ -63,7 +70,7 @@ fun MonthScreen() {
     val today = LocalDate.now()
     var anchor by remember { mutableStateOf(today) }
     var yearView by remember { mutableStateOf(false) }
-    var filter by remember { mutableStateOf<String?>(null) }
+    val open = remember { mutableStateMapOf<String, Boolean>() }
     val c = C.colors
 
     val period = Periods.periodFor(anchor, d.settings)
@@ -129,51 +136,20 @@ fun MonthScreen() {
             )
         }
 
-        val variable = sum.entries.filter { Budget.spendingValue(it, d.settings.cashMode) > 0 }
-            .groupBy { if (it.kind == EntryKind.EXPENSE) it.categoryId ?: DefaultCategories.OTHER else DefaultCategories.CASH_UNKNOWN }
-            .mapValues { (_, es) -> es.sumOf { Budget.spendingValue(it, d.settings.cashMode) } }
-            .toList().sortedByDescending { it.second }
-        if (variable.isNotEmpty()) {
-            SectionTitle("Wohin ging's?")
-            val prevBy = prevSum.byCategory.associate { it.categoryId to it.amount }
-            val max = variable.first().second.coerceAtLeast(1)
-            Group {
-                variable.forEachIndexed { i, (catId, amount) ->
-                    if (i > 0) GroupDivider()
-                    val sel = filter == catId
-                    Column(
-                        Modifier.fillMaxWidth().background(if (sel) c.soft2 else c.surface)
-                            .clickable { filter = if (sel) null else catId }.padding(horizontal = 16.dp, vertical = 10.dp),
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(d.category(catId)?.name ?: "Sonstiges", style = RowTitle, color = c.fg, modifier = Modifier.weight(1f))
-                            Text(Money.format(amount), style = MaterialTheme.typography.titleSmall, color = c.fg)
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(c.line)) {
-                            Box(Modifier.fillMaxWidth(amount.toFloat() / max).height(6.dp).clip(RoundedCornerShape(50)).background(c.primary))
-                        }
-                        val prev = prevBy[catId] ?: 0
-                        if (prev > 0) {
-                            val diff = amount - prev
-                            Text(
-                                if (diff > 0) "${Money.short(diff)} mehr als im Vormonat" else if (diff < 0) "${Money.short(-diff)} weniger als im Vormonat" else "wie im Vormonat",
-                                style = MaterialTheme.typography.bodySmall, color = c.muted, modifier = Modifier.padding(top = 4.dp),
-                            )
-                        }
-                    }
-                }
+        if (sum.entries.isNotEmpty()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SectionTitle("Einträge", Modifier.weight(1f).padding(bottom = 8.dp))
+                Pill("Kategorie", d.settings.monthView == MonthView.CATEGORY, { Store.update { it.copy(settings = it.settings.copy(monthView = MonthView.CATEGORY)) } })
+                Spacer(Modifier.padding(3.dp))
+                Pill("Tag", d.settings.monthView == MonthView.DAY, { Store.update { it.copy(settings = it.settings.copy(monthView = MonthView.DAY)) } })
             }
-        }
-
-        val list = sum.entries.filter { e ->
-            filter == null || (if (e.kind == EntryKind.EXPENSE) e.categoryId ?: DefaultCategories.OTHER else DefaultCategories.CASH_UNKNOWN) == filter
-        }
-        if (list.isNotEmpty()) {
-            SectionTitle(if (filter != null) "Einträge: ${d.category(filter)?.name ?: "Sonstiges"}" else "Alle Einträge")
-            list.groupBy { it.date }.toSortedMap(compareByDescending { it }).forEach { (day, es) ->
-                Text(dayLabel(day, today), style = MaterialTheme.typography.labelMedium, color = c.muted, modifier = Modifier.padding(start = 6.dp, top = 2.dp))
-                EntryGroup(es, { d.category(it) }) { e -> ui.openAdd(AddRequest(editId = e.id)) }
+            if (d.settings.monthView == MonthView.CATEGORY) {
+                CategoryList(sum.entries, prevSum.entries, open, d.settings.cashMode) { e -> ui.openAdd(AddRequest(editId = e.id)) }
+            } else {
+                sum.entries.groupBy { it.date }.toSortedMap(compareByDescending { it }).forEach { (day, es) ->
+                    Text(dayLabel(day, today), style = MaterialTheme.typography.labelMedium, color = c.muted, modifier = Modifier.padding(start = 6.dp, top = 2.dp))
+                    EntryGroup(es, { d.category(it) }) { e -> ui.openAdd(AddRequest(editId = e.id)) }
+                }
             }
         } else if (!future) Hint("Noch nichts eingetragen in diesem Monat.")
 
@@ -206,6 +182,60 @@ fun MonthScreen() {
         Spacer(Modifier.height(110.dp))
     }
 }
+
+/**
+ * Einträge nach Kategorie, zugeklappt, mit Summe und Balken. Ohne Kategorie landet in einer
+ * eigenen Gruppe, Bargeld-Bewegungen ebenso. Einnahmen stehen hinter den Ausgaben.
+ */
+@Composable
+private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableMap<String, Boolean>, cashMode: CashMode, onClick: (Entry) -> Unit) {
+    val d by Store.data.collectAsState()
+    val c = C.colors
+    fun key(e: Entry): String = when (e.kind) {
+        EntryKind.EXPENSE, EntryKind.REFUND, EntryKind.INCOME -> e.categoryId?.takeIf { d.category(it) != null } ?: NONE
+        else -> CASH
+    }
+    // Ausgaben positiv, Einnahmen und Erstattungen negativ.
+    fun value(e: Entry): Cents = if (e.kind == EntryKind.INCOME) -e.amount else Budget.spendingValue(e, cashMode)
+    val prevBy = prev.groupBy(::key).mapValues { (_, es) -> es.sumOf(::value) }
+    val groups = entries.groupBy(::key).map { (k, es) -> Triple(k, es, es.sumOf(::value)) }
+        .sortedWith(compareBy<Triple<String, List<Entry>, Cents>> { if (it.first == NONE) 3 else if (it.first == CASH) 2 else if (it.third < 0) 1 else 0 }.thenByDescending { kotlin.math.abs(it.third) })
+    val max = groups.maxOf { it.third }.coerceAtLeast(1)
+    Group {
+        groups.forEachIndexed { i, (k, es, v) ->
+            if (i > 0) GroupDivider()
+            val name = when (k) { NONE -> "Ohne Kategorie"; CASH -> "Bargeld"; else -> d.category(k)?.name ?: "Ohne Kategorie" }
+            val p = prevBy[k] ?: 0
+            val note = listOfNotNull(
+                "${es.size} ${if (es.size == 1) "Eintrag" else "Einträge"}",
+                // Gemischte Gruppe: nicht nur den Saldo zeigen.
+                es.map(::value).let { vs ->
+                    val out = vs.filter { it > 0 }.sum()
+                    val inn = -vs.filter { it < 0 }.sum()
+                    if (out > 0 && inn > 0) "${Money.format(out)} raus, ${Money.format(inn)} rein" else null
+                },
+                if (v > 0 && p > 0) when {
+                    v > p -> "${Money.short(v - p)} mehr als im Vormonat"
+                    v < p -> "${Money.short(p - v)} weniger als im Vormonat"
+                    else -> "wie im Vormonat"
+                } else null,
+            ).joinToString(", ")
+            val isOpen = open[k] ?: false
+            FoldRow(
+                name, if (v < 0) "+" + Money.format(-v) else Money.format(v), isOpen, note = note,
+                valueColor = if (v < 0) c.good else c.fg, bar = if (v > 0) v.toFloat() / max else null,
+            ) { open[k] = !isOpen }
+            AnimatedVisibility(isOpen) {
+                Column {
+                    es.forEach { e -> GroupDivider(); EntryRow(e, d.category(e.categoryId), showDay = true) { onClick(e) } }
+                }
+            }
+        }
+    }
+}
+
+private const val NONE = "_none"
+private const val CASH = "_cash"
 
 @Composable
 private fun YearView(onOpen: (Period) -> Unit) {

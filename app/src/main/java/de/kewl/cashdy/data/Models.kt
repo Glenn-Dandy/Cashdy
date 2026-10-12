@@ -128,6 +128,14 @@ enum class PeriodMode { CALENDAR, FIXED_DAY, INCOME }
 @Serializable
 enum class CashMode { WALLET, SIMPLE }
 
+/** Sortierung auf "Fest": nach Kategorie zusammengefasst, nach Name oder nach nächster Abbuchung. */
+@Serializable
+enum class FixedView { CATEGORY, NAME, DUE }
+
+/** Einträge auf "Monat": nach Kategorie zusammengefasst oder nach Tag. */
+@Serializable
+enum class MonthView { CATEGORY, DAY }
+
 @Serializable
 data class Settings(
     val onboarded: Boolean = false,
@@ -165,6 +173,9 @@ data class Settings(
      * Rechnung im ersten Durchlauf ist also nur teilweise angespart. Leer = schon immer.
      */
     val potStart: Day? = null,
+    /** Zuletzt gewählte Ansichten, damit sie beim nächsten Öffnen wieder so sind. */
+    val fixedView: FixedView = FixedView.CATEGORY,
+    val monthView: MonthView = MonthView.CATEGORY,
 ) {
     companion object {
         val DEFAULT_WATCHED = setOf(
