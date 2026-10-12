@@ -42,8 +42,12 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** HOPE: Geld wird knapp. Die Münze jubelt dir zu, statt sich Sorgen zu machen. */
-enum class Mood { HAPPY, OK, HOPE, PARTY, SLEEPY }
+/**
+ * STRONG: es wird knapp, die Münze packt mit an („Du schaffst das“).
+ * HEART: im Minus, sie tröstet und hält dir ein Herz hin („Ich bin bei dir“).
+ * CHEER: ein kleiner Erfolg, sie jubelt mit beiden Ärmchen.
+ */
+enum class Mood { HAPPY, OK, STRONG, HEART, CHEER, PARTY, SLEEPY }
 
 /** Kleine Anstöße von außen, z. B. ein Hüpfer, wenn gerade etwas eingetragen wurde. */
 object MascotEvents {
@@ -82,7 +86,7 @@ fun Mascot(mood: Mood, modifier: Modifier = Modifier, size: Dp = 96.dp, animate:
     val breathe by t.animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse), "breathe")
     val blinkT by t.animateFloat(0f, 1f, loop(4200), "blink")
     val shineT by t.animateFloat(0f, 1f, loop(7000), "shine")
-    val beat by t.animateFloat(0f, 1f, loop(if (mood == Mood.PARTY) 1100 else 2800), "beat")
+    val beat by t.animateFloat(0f, 1f, loop(when (mood) { Mood.PARTY -> 1100; Mood.HEART -> 1800; Mood.STRONG -> 2600; else -> 2800 }), "beat")
     val waveT by t.animateFloat(0f, 1f, loop(1600), "wave")
     val zT by t.animateFloat(0f, 1f, loop(3000), "z")
 
@@ -125,7 +129,8 @@ fun Mascot(mood: Mood, modifier: Modifier = Modifier, size: Dp = 96.dp, animate:
             hopCurve(hop.value).let { (y, ax, ay) -> dy += y; sx *= ax; sy *= ay }
             when (mood) {
                 Mood.PARTY -> { val p = sin(beat * 2 * PI).toFloat(); dy -= 8f * kotlin.math.abs(p); rot = 7f * p }
-                Mood.HOPE -> { val k = pulse(beat, 0.6f, 0.86f); dy -= 5f * k; rot = -2f * k }
+                Mood.CHEER -> { val k = pulse(beat, 0.6f, 0.86f); dy -= 5f * k; rot = -2f * k }
+                Mood.STRONG -> { val k = pulse(beat, 0.55f, 0.9f); dy -= 2f * k }
                 Mood.SLEEPY -> rot = 4f * sin(zT * 2 * PI).toFloat()
                 else -> {}
             }
@@ -137,11 +142,13 @@ fun Mascot(mood: Mood, modifier: Modifier = Modifier, size: Dp = 96.dp, animate:
         translate(top = dy * s) {
             rotate(rot, Offset(50 * s, 50 * s)) {
                 scale(sx, sy, Offset(50 * s, 96 * s)) {
-                    if (mood == Mood.HOPE) cheerArms(s, if (motion) pulse(beat, 0.6f, 0.86f) else 0f)
+                    if (mood == Mood.CHEER) cheerArms(s, if (motion) pulse(beat, 0.6f, 0.86f) else 0f)
+                    if (mood == Mood.STRONG) flexArm(s, if (motion) pulse(beat, 0.55f, 0.9f) else 0f)
                     if (wave) waveArm(s, if (motion) sin(waveT * 2 * PI).toFloat() else 0f)
                     coinBody(s, if (motion) shineT else 0f)
                     face(s, mood, if (motion) blink(blinkT) else 1f)
-                    if (mood == Mood.HOPE) sparkles(s, if (motion) pulse(beat, 0.62f, 0.9f) else 0.7f)
+                    if (mood == Mood.CHEER) sparkles(s, if (motion) pulse(beat, 0.62f, 0.9f) else 0.7f)
+                    if (mood == Mood.HEART) hugHeart(s, if (motion) heartbeat(beat) else 1f)
                 }
             }
         }
@@ -207,12 +214,16 @@ private fun DrawScope.face(s: Float, mood: Mood, open: Float) {
             drawPath(Path().apply { moveTo(33 * s, 47 * s); quadraticTo(38 * s, 50 * s, 43 * s, 47 * s) }, Ink, style = stroke(3.5f))
             drawPath(Path().apply { moveTo(57 * s, 47 * s); quadraticTo(62 * s, 50 * s, 67 * s, 47 * s) }, Ink, style = stroke(3.5f))
         }
+        Mood.HEART -> {
+            drawPath(Path().apply { moveTo(33 * s, 47 * s); quadraticTo(38 * s, 42 * s, 43 * s, 47 * s) }, Ink, style = stroke(3.8f))
+            drawPath(Path().apply { moveTo(57 * s, 47 * s); quadraticTo(62 * s, 42 * s, 67 * s, 47 * s) }, Ink, style = stroke(3.8f))
+        }
         Mood.PARTY -> {
             drawPath(Path().apply { moveTo(32 * s, 48 * s); lineTo(38 * s, 41 * s); lineTo(44 * s, 48 * s) }, Ink, style = stroke(4f))
             drawPath(Path().apply { moveTo(56 * s, 48 * s); lineTo(62 * s, 41 * s); lineTo(68 * s, 48 * s) }, Ink, style = stroke(4f))
         }
         else -> scale(1f, open, Offset(50 * s, 45 * s)) {
-            val big = mood == Mood.HOPE
+            val big = mood == Mood.CHEER
             val r = if (big) 6f else 5f
             drawCircle(Ink, r * s, Offset(38 * s, 45 * s))
             drawCircle(Ink, r * s, Offset(62 * s, 45 * s))
@@ -225,13 +236,19 @@ private fun DrawScope.face(s: Float, mood: Mood, open: Float) {
             }
         }
     }
+    if (mood == Mood.STRONG) {
+        drawPath(Path().apply { moveTo(32 * s, 37 * s); quadraticTo(38 * s, 33 * s, 44 * s, 36 * s) }, Ink, style = stroke(3f))
+        drawPath(Path().apply { moveTo(56 * s, 36 * s); quadraticTo(62 * s, 33 * s, 68 * s, 37 * s) }, Ink, style = stroke(3f))
+    }
     // Mund
     when (mood) {
+        Mood.STRONG -> drawPath(Path().apply { moveTo(38 * s, 59 * s); quadraticTo(50 * s, 71 * s, 62 * s, 59 * s) }, Ink, style = stroke(4.5f))
+        Mood.HEART -> drawPath(Path().apply { moveTo(44 * s, 58 * s); quadraticTo(50 * s, 63 * s, 56 * s, 58 * s) }, Ink, style = stroke(4f))
         Mood.HAPPY -> drawPath(Path().apply { moveTo(40 * s, 60 * s); quadraticTo(50 * s, 70 * s, 60 * s, 60 * s) }, Ink, style = stroke(4.5f))
         Mood.OK -> drawPath(Path().apply { moveTo(42 * s, 62 * s); quadraticTo(50 * s, 66 * s, 58 * s, 62 * s) }, Ink, style = stroke(4.5f))
         Mood.SLEEPY -> drawOval(Ink, Offset(46.5f * s, 60 * s), Size(7 * s, 6 * s))
         Mood.PARTY -> drawPath(Path().apply { moveTo(38 * s, 59 * s); quadraticTo(50 * s, 76 * s, 62 * s, 59 * s); close() }, Ink)
-        Mood.HOPE -> {
+        Mood.CHEER -> {
             val mouth = Path().apply { moveTo(36 * s, 57 * s); quadraticTo(50 * s, 77 * s, 64 * s, 57 * s); quadraticTo(50 * s, 61 * s, 36 * s, 57 * s); close() }
             drawPath(mouth, Ink)
             drawPath(mouth, Ink, style = stroke(2f))
@@ -256,6 +273,47 @@ private fun DrawScope.cheerArms(s: Float, k: Float) {
     }
     arm(-1f); arm(1f)
 }
+
+private fun DrawScope.fist(s: Float, x: Float, y: Float, r: Float = 6.5f) {
+    drawCircle(Rim, r * s, Offset(x * s, y * s))
+    drawCircle(Edge, r * s, Offset(x * s, y * s), style = Stroke(2.5f * s))
+}
+
+/** „Du schaffst das“: rechts ein angewinkelter Arm mit Muskel, links einer locker unten. */
+private fun DrawScope.flexArm(s: Float, k: Float) {
+    drawPath(Path().apply { moveTo(14 * s, 62 * s); quadraticTo(0f, 66 * s, -2 * s, 80 * s) }, Edge, style = Stroke(6 * s, cap = StrokeCap.Round))
+    fist(s, -2f, 83f)
+    rotate(-10f * k, Offset(86 * s, 54 * s)) {
+        drawPath(
+            Path().apply { moveTo(86 * s, 54 * s); lineTo(104 * s, 54 * s); lineTo(106 * s, 32 * s) }, Edge,
+            style = Stroke(6.5f * s, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
+        val b = 1f + 0.35f * k
+        drawOval(Edge, Offset((97 - 6 * b) * s, (49 - 5 * b) * s), Size(12 * b * s, 10 * b * s))
+        fist(s, 106f, 27f, 7f)
+    }
+}
+
+/** „Ich bin bei dir“: beide Ärmchen vorn, ein Herz in den Händen, das sanft pocht. */
+private fun DrawScope.hugHeart(s: Float, k: Float) {
+    drawPath(Path().apply { moveTo(12 * s, 58 * s); quadraticTo(22 * s, 74 * s, 38 * s, 78 * s) }, Edge, style = Stroke(6 * s, cap = StrokeCap.Round))
+    drawPath(Path().apply { moveTo(88 * s, 58 * s); quadraticTo(78 * s, 74 * s, 62 * s, 78 * s) }, Edge, style = Stroke(6 * s, cap = StrokeCap.Round))
+    scale(k, k, Offset(50 * s, 80 * s)) {
+        val p = Path().apply {
+            moveTo(50 * s, 92 * s)
+            cubicTo(38 * s, 84 * s, 36 * s, 74 * s, 43 * s, 71 * s)
+            cubicTo(47 * s, 69 * s, 50 * s, 72 * s, 50 * s, 74 * s)
+            cubicTo(50 * s, 72 * s, 53 * s, 69 * s, 57 * s, 71 * s)
+            cubicTo(64 * s, 74 * s, 62 * s, 84 * s, 50 * s, 92 * s)
+            close()
+        }
+        drawPath(p, Heart)
+        drawPath(p, Color(0xFFE04E74), style = Stroke(1.5f * s))
+    }
+}
+
+/** Herzschlag: zweimal kurz größer, dann Pause. */
+private fun heartbeat(t: Float): Float = 1f + 0.15f * pulse(t, 0.4f, 0.6f) + 0.1f * pulse(t, 0.6f, 0.8f)
 
 /** Links ein Ärmchen locker unten, rechts eins hoch, das winkt. [w] -1..1. */
 private fun DrawScope.waveArm(s: Float, w: Float) {

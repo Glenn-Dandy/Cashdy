@@ -16,7 +16,7 @@
 - Beim Einrichten fragt Cashdy bei allen Fixkosten nach dem Abbuchungstag
 - Kredite und Raten: mit letzter Rate zeigt „Fest“ einen Balken und „noch 14 Raten, fertig im Dezember 2027“. Nach der letzten Rate fällt sie weg und Cashdy feiert mit
 - Die Münze ist jetzt honiggold mit Riffelkante (auch das App-Symbol). Sie blinzelt, atmet, glänzt ab und zu, dreht sich beim Antippen mit einem Herz, hüpft nach jedem Eintrag und winkt beim ersten Start
-- Wird es knapp, macht die Münze Mut statt zu warnen („Wird eng, aber das kriegen wir hin…“) und feiert kleine Erfolge: ein sparsamer Tag, mehrere Tage am Stück im Rahmen, ein Monat im Plus nach einem Minus
+- Wird es knapp, packt die Münze mit an („Wird eng, aber das kriegen wir hin…“). Im Minus tröstet sie und hält dir ein Herz hin („Das passiert, und es wird wieder… Du schaffst das!“). Kleine Erfolge feiert sie jubelnd: ein sparsamer Tag, mehrere Tage am Stück im Rahmen, ein Monat im Plus nach einem Minus
 - Neu: Mehr › Neu anfangen mit Kontostand, wenn die Zahlen nicht mehr stimmen. Die Rücklage, die schon auf dem Konto liegt, bleibt dabei liegen
 - Datenschutz-Text ohne Nextcloud
 - Behoben: Im Modus „ab Geldeingang“ wurden Monate in der Zukunft falsch berechnet

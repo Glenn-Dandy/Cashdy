@@ -75,8 +75,8 @@ fun mascotSays(d: AppData, sum: Summary, today: LocalDate): MascotLine {
     val p = sum.period
     if (sum.income == 0L) return MascotLine(Mood.OK, "Trag unter „Fest“ dein Gehalt ein, dann rechne ich los.", true)
     if (sum.free < 0) return MascotLine(
-        Mood.HOPE,
-        "Diesen Monat sind es ${Money.format(-sum.free)} zu viel. Das passiert, und es ist kein Weltuntergang. " +
+        Mood.HEART,
+        "Diesen Monat sind es ${Money.format(-sum.free)} zu viel. Das passiert, und es wird wieder. " +
             "Am ${p.end.plusDays(1).format(DateTimeFormatter.ofPattern("d.M."))} fangen wir frisch an. Du schaffst das!",
         true,
     )
@@ -86,12 +86,12 @@ fun mascotSays(d: AppData, sum: Summary, today: LocalDate): MascotLine {
     val todaySpent = todays.sumOf { Budget.spendingValue(it, cm) }
     val todayBudget = if (sum.daysLeft > 0) (sum.free + todaySpent) / sum.daysLeft else 0
     if (tight && todays.any { Budget.spendingValue(it, cm) > 0 } && todaySpent <= todayBudget) {
-        return MascotLine(Mood.HAPPY, "Heute nur ${Money.format(todaySpent)} ausgegeben. Stark, genau so geht's!", true)
+        return MascotLine(Mood.CHEER, "Heute nur ${Money.format(todaySpent)} ausgegeben. Stark, genau so geht's!", true)
     }
     val streak = daysInBudget(d, sum, today)
-    if (streak >= 3) return MascotLine(Mood.HAPPY, "Schon $streak Tage am Stück im Rahmen geblieben. Ich bin stolz auf dich!", true)
+    if (streak >= 3) return MascotLine(Mood.CHEER, "Schon $streak Tage am Stück im Rahmen geblieben. Ich bin stolz auf dich!", true)
     if (tight) return MascotLine(
-        Mood.HOPE,
+        Mood.STRONG,
         "Wird eng, aber das kriegen wir hin. Mit ${Money.format(sum.perDay)} am Tag kommst du bis zum ${p.end.dayOfMonth}. durch. Ich bin dabei!",
         true,
     )
