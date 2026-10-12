@@ -72,7 +72,7 @@ import de.kewl.cashdy.ui.theme.C
 import de.kewl.cashdy.widget.CashdyWidget
 import java.time.LocalDate
 
-private data class QuickFixed(val name: String, val cat: String, val months: Int, val amount: Long, val due: LocalDate)
+private data class QuickFixed(val name: String, val cat: String, val months: Int, val amount: Long, val due: LocalDate, val end: LocalDate? = null)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -109,7 +109,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
             fixed.forEach { f ->
                 rec += Recurring(
                     id = Store.newId(), name = f.name, categoryId = f.cat, intervalMonths = f.months,
-                    firstDue = f.due, spread = f.months > 1, prices = listOf(PriceStep(f.due, f.amount)),
+                    firstDue = f.due, endDate = f.end, spread = f.months > 1, prices = listOf(PriceStep(f.due, f.amount)),
                 )
             }
             val lastSalaryDay = Periods.startInMonth(today, salaryDay, false).let { if (it.isAfter(today)) Periods.startInMonth(today.minusMonths(1), salaryDay, false) else it }
@@ -270,7 +270,10 @@ fun OnboardingScreen(onDone: () -> Unit) {
         var title by remember(n) { mutableStateOf(n) }
         var due by remember(n) { mutableStateOf(LocalDate.now().let { if (m == 1) it.withDayOfMonth(1) else it.plusMonths(1).withDayOfMonth(1) }) }
         var pickDue by remember(n) { mutableStateOf(false) }
+        var end by remember(n) { mutableStateOf<LocalDate?>(null) }
+        var pickEnd by remember(n) { mutableStateOf(false) }
         if (pickDue) DatePick(due, { pickDue = false }) { due = it }
+        if (pickEnd) DatePick(end ?: LocalDate.now().plusYears(1), { pickEnd = false }) { end = it }
         AlertDialog(
             onDismissRequest = { askFixed = null },
             title = { Text(if (n.isBlank()) "Eigene Fixkosten" else n) },
@@ -282,12 +285,16 @@ fun OnboardingScreen(onDone: () -> Unit) {
                         Text(if (m == 1) "Abbuchung am" else "Nächste Abbuchung", style = MaterialTheme.typography.bodyMedium, color = c.muted, modifier = Modifier.weight(1f))
                         DateChip(due, { pickDue = true })
                     }
+                    if (cat == DefaultCategories.LOANS) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Letzte Rate am", style = MaterialTheme.typography.bodyMedium, color = c.muted, modifier = Modifier.weight(1f))
+                        if (end != null) DateChip(end!!, { pickEnd = true }) else TextButtonSoft("festlegen", { pickEnd = true })
+                    }
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
                     val a = Money.parse(amount)
-                    if (a != null && a > 0 && title.isNotBlank()) { fixed += QuickFixed(title.trim(), cat, m, a, due); askFixed = null }
+                    if (a != null && a > 0 && title.isNotBlank()) { fixed += QuickFixed(title.trim(), cat, m, a, due, end); askFixed = null }
                 }) { Text("Hinzufügen") }
             },
             dismissButton = { TextButton(onClick = { askFixed = null }) { Text("Abbrechen") } },

@@ -87,7 +87,11 @@ fun FixedScreen() {
     val row: @Composable (Recurring) -> Unit = { r ->
         val go = { ui.go(Route.RecurringEdit(r.id, r.income)) }
         val pot = pots[r.id]
-        if (pot != null) PotRow(pot, go) else RecurringRow(r, today, go)
+        when {
+            pot != null -> PotRow(pot, go)
+            Recurrence.isLoan(r) -> LoanRow(r, today, go)
+            else -> RecurringRow(r, today, go)
+        }
     }
 
     Column(
@@ -221,6 +225,35 @@ private fun RecurringRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {
     }
 }
 
+/** Kredit: Rate, Balken und wie viele Raten noch fehlen. Ohne letzte Rate ein kleiner Hinweis. */
+@Composable
+private fun LoanRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {
+    val c = C.colors
+    val lp = Recurrence.loanProgress(r, today)
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = rowStart, end = 16.dp, top = 11.dp, bottom = 11.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(r.name, style = ItemTitle, color = c.fg, modifier = Modifier.weight(1f))
+            Text(Money.format(Recurrence.currentPrice(r, today)), style = ItemValue, color = c.fg)
+        }
+        if (lp == null) {
+            Text("Wann ist die letzte Rate? Tipp hier und trag sie ein, dann siehst du, wann du fertig bist.", style = MaterialTheme.typography.bodySmall, color = c.primary)
+            return@Column
+        }
+        Spacer(Modifier.height(6.dp))
+        Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(c.line)) {
+            Box(Modifier.fillMaxWidth(lp.share).height(6.dp).clip(RoundedCornerShape(50)).background(c.good))
+        }
+        Text(
+            when (lp.left) {
+                0 -> "Geschafft, alles abbezahlt!"
+                1 -> "Nur noch 1 Rate, die letzte am ${shortDate(lp.last)}"
+                else -> "Noch ${lp.left} Raten, fertig im ${lp.last.format(monthYearFmt)}"
+            },
+            style = MaterialTheme.typography.bodySmall, color = c.muted, modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}
+
 @Composable
 private fun PotRow(p: PotStatus, onClick: () -> Unit) {
     val c = C.colors
@@ -249,4 +282,5 @@ private fun PotRow(p: PotStatus, onClick: () -> Unit) {
     }
 }
 
+private val monthYearFmt = java.time.format.DateTimeFormatter.ofPattern("LLLL yyyy", java.util.Locale.GERMAN)
 private val monthFmt = java.time.format.DateTimeFormatter.ofPattern("LLLL", java.util.Locale.GERMAN)

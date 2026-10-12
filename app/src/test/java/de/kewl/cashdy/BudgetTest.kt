@@ -196,6 +196,23 @@ class BudgetTest {
         assertEquals(50_000L, s.free)
     }
 
+    @Test fun loanProgress() {
+        // 24 Raten von Januar 2026 bis Dezember 2027, am 12.10.2026 sind 10 bezahlt.
+        val loan = Recurring("l", "Autokredit", categoryId = "loans", firstDue = d(2026, 1, 1), endDate = d(2027, 12, 1),
+            prices = listOf(PriceStep(d(2026, 1, 1), 15_000)))
+        val lp = Recurrence.loanProgress(loan, d(2026, 10, 12))!!
+        assertEquals(10, lp.paid)
+        assertEquals(24, lp.total)
+        assertEquals(14, lp.left)
+        assertEquals(d(2027, 12, 1), lp.last)
+        // Nach der letzten Rate ist sie weg und der Monat hat mehr frei.
+        val data = AppData(recurring = listOf(loan))
+        assertEquals(15_000L, Budget.summary(data, Periods.calendar(d(2027, 12, 1)), d(2027, 12, 1)).fixed)
+        assertEquals(0L, Budget.summary(data, Periods.calendar(d(2028, 1, 1)), d(2028, 1, 1)).fixed)
+        // Ohne letzte Rate gibt es keinen Fortschritt, aber die Rate zählt weiter.
+        assertEquals(null, Recurrence.loanProgress(loan.copy(endDate = null), d(2026, 10, 12)))
+    }
+
     @Test fun roundingRestStaysInPot() {
         val gez = Recurring("g", "Rundfunk", intervalMonths = 3, firstDue = d(2026, 1, 15), spread = true, prices = listOf(PriceStep(d(2026, 1, 15), 5509)))
         val data = AppData(recurring = listOf(gez), settings = Settings(potStart = d(2025, 1, 1)))

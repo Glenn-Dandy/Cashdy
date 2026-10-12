@@ -35,6 +35,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import de.kewl.cashdy.data.AppData
 import de.kewl.cashdy.data.CashMode
 import de.kewl.cashdy.data.Store
+import androidx.compose.foundation.layout.width
+import de.kewl.cashdy.ui.components.TextButtonSoft
 import de.kewl.cashdy.data.category
 import de.kewl.cashdy.detect.Detection
 import de.kewl.cashdy.detect.PaymentListenerService
@@ -157,6 +159,30 @@ fun HomeScreen() {
         }
         // Das Maskottchen meldet sich nur, wenn es etwas zu sagen gibt.
         if (line.mood == Mood.WORRIED || sum.income == 0L) Hint(line.text, Modifier.padding(horizontal = 4.dp))
+
+        // Kredit abbezahlt: einmal richtig feiern.
+        d.recurring.firstOrNull { r ->
+            Recurrence.isLoan(r) && r.endDate != null && !r.endDate.isAfter(today) && r.endDate.isAfter(today.minusDays(60)) &&
+                "loan:${r.id}" !in d.settings.celebrated
+        }?.let { r ->
+            LaunchedEffect(r.id) { ui.confettiKey++ }
+            Group {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Mascot(Mood.PARTY, size = 56.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Geschafft!", style = MaterialTheme.typography.titleMedium, color = c.fg)
+                        Text(
+                            "${r.name} ist abbezahlt. Ab jetzt hast du jeden Monat ${Money.format(Recurrence.priceAt(r, r.endDate!!))} mehr frei.",
+                            style = MaterialTheme.typography.bodyMedium, color = c.fg,
+                        )
+                    }
+                }
+                TextButtonSoft("Juhu!", {
+                    Store.update { it.copy(settings = it.settings.copy(celebrated = it.settings.celebrated + "loan:${r.id}")) }
+                }, Modifier.align(Alignment.End).padding(end = 8.dp, bottom = 4.dp))
+            }
+        }
 
         // Die Rechnung dahinter, in vier Zeilen.
         Group {

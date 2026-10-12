@@ -90,6 +90,11 @@ fun HelpScreen() {
                 Para("Hast du erst kurz vor der Rechnung angefangen, reicht der Topf noch nicht. Dann zählt der fehlende Rest im Monat der Rechnung, und unter „Fest“ siehst du vorher, wie viel fehlt.")
             }
             GroupDivider()
+            Topic("Kredite und Raten", open == 6, { open = if (open == 6) -1 else 6 }) {
+                Para("Trag die Rate als Fixkosten ein und wähl die Kategorie „Kredite & Raten“. Gib dazu die letzte Rate an, sie steht in deinem Vertrag. Ungefähr reicht.")
+                Para("Unter „Fest“ siehst du dann, wie viele Raten noch fehlen und wann du fertig bist. Nach der letzten Rate ist sie von selbst weg, und du hast jeden Monat mehr frei.")
+            }
+            GroupDivider()
             Topic("Bargeld", open == 3, { open = if (open == 3) -1 else 3 }) {
                 Para("Portemonnaie führen: Abheben füllt dein Portemonnaie, Barzahlungen leeren es. Zählt als ausgegeben, sobald du bar bezahlst.")
                 Para("Einfach-Modus: Abheben zählt sofort als ausgegeben, Barzahlungen musst du nicht eintragen. Umstellen kannst du das unter Mehr › Allgemein.")

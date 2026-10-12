@@ -131,17 +131,19 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
             }, "Alle wie viele Monate?", keyboard = androidx.compose.ui.text.input.KeyboardType.Number)
         }
 
+        val loan = !income && categoryId == DefaultCategories.LOANS
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (existing == null) "Erste Fälligkeit" else "Fällig ab", style = MaterialTheme.typography.bodyLarge, color = c.fg, modifier = Modifier.weight(1f))
+            Text(if (loan) "Erste Rate am" else if (existing == null) "Erste Fälligkeit" else "Fällig ab", style = MaterialTheme.typography.bodyLarge, color = c.fg, modifier = Modifier.weight(1f))
             DateChip(firstDue, { pick = "first" })
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Endet am (optional)", style = MaterialTheme.typography.bodyLarge, color = c.fg, modifier = Modifier.weight(1f))
+            Text(if (loan) "Letzte Rate am" else "Endet am (optional)", style = MaterialTheme.typography.bodyLarge, color = c.fg, modifier = Modifier.weight(1f))
             if (endDate != null) {
                 TextButtonSoft("✕", { endDate = null })
                 DateChip(endDate!!, { pick = "end" })
             } else TextButtonSoft("festlegen", { pick = "end" })
         }
+        if (loan) Hint("Beide Daten stehen in deinem Kreditvertrag. Ungefähr reicht. Dann zeige ich dir, wie viele Raten noch fehlen, und nach der letzten ist die Rate von selbst weg.")
 
         SectionTitle("Kategorie")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -218,9 +220,9 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
         })
         if (existing != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (existing.endDate == null) TextButtonSoft("Gekündigt ab heute", {
+                if (existing.endDate == null || (Recurrence.isLoan(existing) && existing.endDate.isAfter(today))) TextButtonSoft(if (Recurrence.isLoan(existing)) "Schon abbezahlt" else "Gekündigt ab heute", {
                     Store.update { data -> data.copy(recurring = data.recurring.map { if (it.id == existing.id) it.copy(endDate = today) else it }) }
-                    ui.say("Beendet. Ab jetzt rechne ich es nicht mehr mit."); ui.back()
+                    ui.say(if (Recurrence.isLoan(existing)) "Abbezahlt, super!" else "Beendet. Ab jetzt rechne ich es nicht mehr mit."); ui.back()
                 })
                 TextButtonSoft(if (confirmDelete) "Wirklich löschen?" else "Löschen", {
                     if (!confirmDelete) confirmDelete = true else {

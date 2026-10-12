@@ -1,6 +1,7 @@
 package de.kewl.cashdy.domain
 
 import de.kewl.cashdy.data.Cents
+import de.kewl.cashdy.data.DefaultCategories
 import de.kewl.cashdy.data.PriceStep
 import de.kewl.cashdy.data.Recurring
 import java.time.LocalDate
@@ -11,7 +12,25 @@ import java.time.LocalDate
  */
 data class Occurrence(val recurring: Recurring, val date: LocalDate, val amount: Cents, val fromPot: Cents = 0)
 
+/** Stand eines Kredits: [paid] von [total] Raten bezahlt, die letzte am [last]. */
+data class LoanProgress(val paid: Int, val total: Int, val last: LocalDate) {
+    val left: Int get() = total - paid
+    val share: Float get() = if (total > 0) paid.toFloat() / total else 0f
+}
+
 object Recurrence {
+
+    /** Kredit, Darlehen oder Ratenkauf: alles in der Kategorie „Kredite & Raten“. */
+    fun isLoan(r: Recurring) = !r.income && r.categoryId == DefaultCategories.LOANS
+
+    /** Wie weit ein Kredit abbezahlt ist. Nur mit letzter Rate ([Recurring.endDate]). */
+    fun loanProgress(r: Recurring, today: LocalDate): LoanProgress? {
+        val end = r.endDate ?: return null
+        if (!isLoan(r)) return null
+        val all = dueDates(r, r.firstDue, end)
+        if (all.isEmpty()) return null
+        return LoanProgress(all.count { !it.isAfter(today) }, all.size, all.last())
+    }
 
     fun intervalLabel(months: Int): String = when (months) {
         1 -> "monatlich"
