@@ -164,6 +164,25 @@ class BudgetTest {
         assertEquals(-20_000L, Budget.summary(simple, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 13)).startMoney)
     }
 
+    @Test fun restartKeepsPotMoney() {
+        // Rücklage läuft seit Januar, Neustart am 12.10. mit 2.000 € auf dem Konto. Darin stecken
+        // Januar bis September Kfz-Rücklage (9 x 50 €), die bleiben liegen. Der Oktober legt wie
+        // gewohnt seinen Anteil zurück.
+        val data = AppData(
+            recurring = listOf(salary, car),
+            entries = listOf(
+                Entry("w", 10_000, d(2026, 9, 1), EntryKind.CASH_WITHDRAWAL),
+                Entry("b", 1_500, d(2026, 9, 2), EntryKind.EXPENSE, "food", method = PayMethod.CASH),
+            ),
+            settings = Settings(potStart = d(2026, 1, 1), startDay = d(2026, 10, 12), startBalance = 200_000),
+        )
+        val oct = Budget.summary(data, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 12))
+        assertEquals(200_000L + 8_500, oct.startMoney) // Portemonnaie: 100 € abgehoben, 15 € bar bezahlt
+        assertEquals(45_000L, oct.startPot)
+        assertEquals(208_500L - 45_000 + 300_000, oct.income)
+        assertEquals(5_000L, oct.reserve)
+    }
+
     @Test fun startMonthUntilNextSalary() {
         // Monat ab Gehaltseingang: Start am 12.10., letztes Gehalt kam am 28.9. Der Startmonat
         // läuft bis zum nächsten Gehalt, das ist dann schon der nächste Zeitraum.

@@ -64,6 +64,7 @@ import de.kewl.cashdy.ui.components.Mascot
 import de.kewl.cashdy.ui.components.MoneyField
 import de.kewl.cashdy.ui.components.Mood
 import de.kewl.cashdy.ui.components.Pill
+import de.kewl.cashdy.ui.components.SettingSwitch
 import de.kewl.cashdy.ui.components.SoftField
 import de.kewl.cashdy.ui.components.SpeechBubble
 import de.kewl.cashdy.ui.components.TextButtonSoft
@@ -186,7 +187,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                             SpeechBubble("Wie viel ist gerade auf deinem Konto?", Modifier.weight(1f))
                         }
                         MoneyField(balance, { balance = it }, "Kontostand heute in €")
-                        Pill(if (minus) "✓ Konto ist im Minus" else "Konto ist im Minus", minus, { minus = !minus })
+                        SettingSwitch("Konto ist im Minus", "Zum Beispiel im Dispo", minus) { minus = it }
                         Hint(
                             "Damit dein erster Monat gleich stimmt, rechne ich bis " +
                                 when (mode) { PeriodMode.CALENDAR -> "zum Monatsende"; PeriodMode.FIXED_DAY -> "zum nächsten $salaryDay."; PeriodMode.INCOME -> "zum nächsten Gehalt" } +

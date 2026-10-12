@@ -36,7 +36,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -178,7 +180,31 @@ fun Group(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> 
 
 @Composable
 fun GroupDivider() {
-    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = C.colors.line)
+    HorizontalDivider(Modifier.padding(start = if (LocalNested.current) NestIndent else 16.dp, end = 16.dp), color = C.colors.line)
+}
+
+/** True innerhalb von [FoldChildren]: Zeilen rücken ein und werden schlichter. */
+val LocalNested = compositionLocalOf { false }
+val NestIndent = 32.dp
+
+/** Linker Abstand für Zeilen, eingerückt innerhalb von [FoldChildren]. */
+val rowStart: Dp @Composable get() = if (LocalNested.current) NestIndent else 16.dp
+
+/** Titel einer Zeile: fett, aufgeklappt unter einer Kategorie normal. */
+val ItemTitle: TextStyle
+    @Composable get() = if (LocalNested.current) MaterialTheme.typography.bodyLarge else RowTitle
+
+/** Betrag einer Zeile, aufgeklappt etwas leiser. */
+val ItemValue: TextStyle
+    @Composable get() = if (LocalNested.current) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleSmall
+
+/** Aufgeklappter Inhalt unter einer [FoldRow]: eingerückt auf leicht getöntem Grund. */
+@Composable
+fun FoldChildren(content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().background(C.colors.bg)) {
+        HorizontalDivider(color = C.colors.line)
+        CompositionLocalProvider(LocalNested provides true) { content() }
+    }
 }
 
 /** Zeile in einer [Group]: Titel, optional Untertitel und Zähler, Pfeil nach rechts. */
@@ -229,8 +255,7 @@ fun FoldRow(
 ) {
     val c = C.colors
     Column(
-        Modifier.fillMaxWidth().background(if (expanded) c.soft2 else c.surface)
-            .clickable(onClick = onClick).padding(start = 16.dp, end = 10.dp, top = 11.dp, bottom = 11.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 16.dp, end = 10.dp, top = 13.dp, bottom = 13.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -286,7 +311,11 @@ fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (
         (if (withCash) "Konto und Bargeld am " else "Kontostand am ") + startDay.format(dm), Money.format(start),
         note = "Startmonat, ab dem ${sum.period.end.plusDays(1).format(dm)} rechne ich normal", onClick = onClick,
     )
-    val rest = sum.income - start
+    if (sum.startPot > 0) {
+        GroupDivider()
+        ValueRow("Davon Rücklage", "− " + Money.format(sum.startPot), note = "bleibt auf dem Konto liegen", onClick = onClick)
+    }
+    val rest = sum.income - start + sum.startPot
     if (rest != 0L) {
         GroupDivider()
         ValueRow("Kommt noch rein", Money.format(rest), onClick = onClick)
@@ -333,12 +362,12 @@ fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> 
     val positive = e.kind == EntryKind.INCOME || e.kind == EntryKind.REFUND
     val neutral = e.kind == EntryKind.CASH_WITHDRAWAL || e.kind == EntryKind.CASH_START
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 11.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = rowStart, end = 16.dp, top = 11.dp, bottom = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(entryTitle(e, cat), style = RowTitle, color = c.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(entryTitle(e, cat), style = ItemTitle, color = c.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val sub = listOfNotNull(
                 when {
                     e.kind == EntryKind.REFUND -> "Erstattung"
@@ -357,7 +386,7 @@ fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> 
                 e.kind == EntryKind.CASH_ADJUST && e.amount < 0 -> "+" + Money.format(-e.amount)
                 else -> Money.format(e.amount)
             },
-            style = MaterialTheme.typography.titleSmall,
+            style = ItemValue,
             color = if (positive) c.good else if (neutral) c.muted else c.fg,
         )
     }

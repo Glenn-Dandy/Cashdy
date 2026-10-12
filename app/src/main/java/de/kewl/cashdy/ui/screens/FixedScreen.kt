@@ -40,7 +40,11 @@ import de.kewl.cashdy.data.Cents
 import de.kewl.cashdy.data.FixedView
 import de.kewl.cashdy.data.Recurring
 import de.kewl.cashdy.data.category
+import de.kewl.cashdy.ui.components.FoldChildren
 import de.kewl.cashdy.ui.components.FoldRow
+import de.kewl.cashdy.ui.components.ItemTitle
+import de.kewl.cashdy.ui.components.ItemValue
+import de.kewl.cashdy.ui.components.rowStart
 import de.kewl.cashdy.ui.components.Pill
 import de.kewl.cashdy.ui.components.SearchField
 import de.kewl.cashdy.data.Store
@@ -157,8 +161,8 @@ fun FixedScreen() {
                                 note = "${rs.size} Posten, ${Money.format(sum * 12)} im Jahr",
                             ) { toggle(key) }
                             AnimatedVisibility(isOpen(key)) {
-                                Column {
-                                    rs.sortedByDescending(::perMonth).forEach { r -> GroupDivider(); row(r) }
+                                FoldChildren {
+                                    rs.sortedByDescending(::perMonth).forEachIndexed { j, r -> if (j > 0) GroupDivider(); row(r) }
                                 }
                             }
                         }
@@ -178,14 +182,14 @@ fun FixedScreen() {
                 if (incomes.isNotEmpty()) {
                     FoldRow("Einnahmen", Money.format(incomes.sumOf(::perMonth)), isOpen("in"), valueColor = c.good, note = "pro Monat") { toggle("in") }
                     AnimatedVisibility(isOpen("in")) {
-                        Column { incomes.sortedByDescending(::perMonth).forEach { r -> GroupDivider(); row(r) } }
+                        FoldChildren { incomes.sortedByDescending(::perMonth).forEachIndexed { j, r -> if (j > 0) GroupDivider(); row(r) } }
                     }
                 }
                 if (ended.isNotEmpty()) {
                     if (incomes.isNotEmpty()) GroupDivider()
                     FoldRow("Beendet", "${ended.size}", isOpen("end"), valueColor = c.muted) { toggle("end") }
                     AnimatedVisibility(isOpen("end")) {
-                        Column { ended.sortedByDescending { it.endDate }.forEach { r -> GroupDivider(); RecurringRow(r, today) { ui.go(Route.RecurringEdit(r.id, r.income)) } } }
+                        FoldChildren { ended.sortedByDescending { it.endDate }.forEachIndexed { j, r -> if (j > 0) GroupDivider(); RecurringRow(r, today) { ui.go(Route.RecurringEdit(r.id, r.income)) } } }
                     }
                 }
             }
@@ -201,11 +205,11 @@ private fun RecurringRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {
     val c = C.colors
     val next = Recurrence.nextDue(r, today)
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 11.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = rowStart, end = 16.dp, top = 11.dp, bottom = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(r.name, style = RowTitle, color = c.fg)
+            Text(r.name, style = ItemTitle, color = c.fg)
             val parts = listOfNotNull(
                 Recurrence.intervalLabel(r.intervalMonths),
                 next?.let { "nächste ${shortDate(it)}" } ?: r.endDate?.let { "bis ${shortDate(it)}" },
@@ -213,7 +217,7 @@ private fun RecurringRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {
             Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = c.muted)
             Recurrence.changeHint(r, today)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.warn) }
         }
-        Text(Money.format(Recurrence.currentPrice(r, today)), style = MaterialTheme.typography.titleSmall, color = if (r.income) c.good else c.fg)
+        Text(Money.format(Recurrence.currentPrice(r, today)), style = ItemValue, color = if (r.income) c.good else c.fg)
     }
 }
 
@@ -221,10 +225,10 @@ private fun RecurringRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {
 private fun PotRow(p: PotStatus, onClick: () -> Unit) {
     val c = C.colors
     val r = p.recurring
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 11.dp)) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = rowStart, end = 16.dp, top = 11.dp, bottom = 11.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(r.name, style = RowTitle, color = c.fg)
+                Text(r.name, style = ItemTitle, color = c.fg)
                 Text(
                     "${Recurrence.intervalLabel(r.intervalMonths)} ${Money.format(p.bill)} · fällig ${shortDate(p.nextDue)}",
                     style = MaterialTheme.typography.bodySmall, color = c.muted,

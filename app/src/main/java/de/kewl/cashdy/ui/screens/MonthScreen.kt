@@ -41,6 +41,7 @@ import de.kewl.cashdy.data.Entry
 import de.kewl.cashdy.data.MonthView
 import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.ui.components.EntryRow
+import de.kewl.cashdy.ui.components.FoldChildren
 import de.kewl.cashdy.ui.components.FoldRow
 import de.kewl.cashdy.data.category
 import de.kewl.cashdy.domain.Budget
@@ -227,8 +228,8 @@ private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableM
                 valueColor = if (v < 0) c.good else c.fg, bar = if (v > 0) v.toFloat() / max else null,
             ) { open[k] = !isOpen }
             AnimatedVisibility(isOpen) {
-                Column {
-                    es.forEach { e -> GroupDivider(); EntryRow(e, d.category(e.categoryId), showDay = true) { onClick(e) } }
+                FoldChildren {
+                    es.forEachIndexed { j, e -> if (j > 0) GroupDivider(); EntryRow(e, d.category(e.categoryId), showDay = true) { onClick(e) } }
                 }
             }
         }

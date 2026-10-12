@@ -13,6 +13,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import de.kewl.cashdy.domain.Periods
+import de.kewl.cashdy.ui.components.Hint
+import de.kewl.cashdy.ui.components.MoneyField
+import de.kewl.cashdy.ui.components.SettingSwitch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -36,6 +47,8 @@ fun MoreScreen() {
     val d by Store.data.collectAsState()
     val ctx = LocalContext.current
     val pending = Detection.pending(d).size
+    var restart by remember { mutableStateOf(false) }
+    if (restart) RestartDialog { restart = false }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -52,6 +65,8 @@ fun MoreScreen() {
             MenuRow("Kassenbon scannen", "Summe und Laden automatisch auslesen") { ui.scanChooser = true }
             GroupDivider()
             MenuRow("Kontoauszug importieren", "CSV von DKB, PayPal & Co.") { ui.go(Route.Import()) }
+            GroupDivider()
+            MenuRow("Neu anfangen mit Kontostand", "Wenn die Zahlen nicht mehr stimmen") { restart = true }
         }
 
         SectionTitle("Einstellungen")
@@ -73,4 +88,47 @@ fun MoreScreen() {
         }
         Spacer(Modifier.height(40.dp))
     }
+}
+
+/**
+ * Neu anfangen: Ab heute rechnet der laufende Monat mit dem echten Kontostand, wie beim
+ * Einrichten. Einträge, Fixkosten und Rücklage bleiben.
+ */
+@Composable
+private fun RestartDialog(onDone: () -> Unit) {
+    val d by Store.data.collectAsState()
+    val c = C.colors
+    var balance by remember { mutableStateOf("") }
+    var minus by remember { mutableStateOf(false) }
+    val today = LocalDate.now()
+    val end = Periods.periodFor(today, d.settings).end.plusDays(1)
+    val wallet = d.settings.cashMode == CashMode.WALLET
+    AlertDialog(
+        onDismissRequest = onDone,
+        containerColor = c.surface,
+        title = { Text("Neu anfangen", color = c.fg) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Schau in deine Banking-App und trag ein, was jetzt auf dem Konto ist. " +
+                        "Bis zum ${end.format(DateTimeFormatter.ofPattern("d.M."))} rechne ich dann mit diesem Betrag, danach wieder ganz normal.",
+                    style = MaterialTheme.typography.bodyMedium, color = c.fg,
+                )
+                MoneyField(balance, { balance = it }, "Kontostand jetzt in €")
+                SettingSwitch("Konto ist im Minus", "Zum Beispiel im Dispo", minus) { minus = it }
+                Hint(
+                    (if (wallet && Budget.wallet(d) > 0) "Dein Bargeld (gerade ${Money.format(Budget.wallet(d))}) rechne ich dazu. " else "") +
+                        "Es wird nichts gelöscht, deine Einträge und Fixkosten bleiben."
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val v = Money.parse(balance) ?: return@TextButton
+                Store.update { it.copy(settings = it.settings.copy(startDay = today, startBalance = if (minus) -v else v)) }
+                onDone()
+            }, enabled = Money.parse(balance) != null) { Text("Neu anfangen") }
+        },
+        dismissButton = { TextButton(onClick = onDone) { Text("Abbrechen") } },
+    )
 }
