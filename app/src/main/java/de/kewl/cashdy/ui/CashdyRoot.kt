@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Repeat
@@ -71,6 +71,8 @@ import de.kewl.cashdy.ui.screens.HomeScreen
 import de.kewl.cashdy.ui.screens.ImportScreen
 import de.kewl.cashdy.ui.screens.InboxScreen
 import de.kewl.cashdy.ui.screens.MonthScreen
+import de.kewl.cashdy.ui.screens.StatsScreen
+import de.kewl.cashdy.ui.screens.CategoryStatsScreen
 import de.kewl.cashdy.ui.screens.MoreScreen
 import de.kewl.cashdy.ui.screens.OnboardingScreen
 import de.kewl.cashdy.ui.screens.RecorderScreen
@@ -148,7 +150,9 @@ fun CashdyRoot(ui: Ui) {
                 AnimatedContent(route, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "route") { r ->
                     when (r) {
                         Route.Home -> HomeScreen()
-                        Route.Month -> MonthScreen()
+                        Route.Stats -> StatsScreen()
+                        is Route.MonthDetail -> MonthScreen(r.start, r.openCategory)
+                        is Route.CategoryStats -> CategoryStatsScreen(r.categoryId, r.year)
                         Route.Fixed -> FixedScreen()
                         Route.More -> MoreScreen()
                         is Route.RecurringEdit -> RecurringEditScreen(r.id, r.income, r.fromDetected)
@@ -228,7 +232,7 @@ private fun BottomBar(current: Route, onAdd: () -> Unit, onSelect: (Route) -> Un
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Tab(Route.Home, Icons.Rounded.Home, "Start")
-            Tab(Route.Month, Icons.Rounded.CalendarMonth, "Monat")
+            Tab(Route.Stats, Icons.Rounded.BarChart, "Statistik")
             // Der Plus-Knopf sitzt in der Mitte und ist von jedem Tab aus erreichbar.
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 Box(

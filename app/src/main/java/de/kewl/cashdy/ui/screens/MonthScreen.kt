@@ -65,16 +65,19 @@ import de.kewl.cashdy.ui.components.Pill
 import de.kewl.cashdy.ui.components.SectionTitle
 import de.kewl.cashdy.ui.components.dayLabel
 import de.kewl.cashdy.ui.theme.C
+import androidx.compose.foundation.layout.width
+import de.kewl.cashdy.ui.components.Mood
+import de.kewl.cashdy.ui.components.Mascot
+import de.kewl.cashdy.ui.components.ScreenHeader
 import java.time.LocalDate
 
 @Composable
-fun MonthScreen() {
+fun MonthScreen(start: LocalDate? = null, openCategory: String? = null) {
     val ui = LocalUi.current
     val d by Store.data.collectAsState()
     val today = LocalDate.now()
-    var anchor by remember { mutableStateOf(today) }
-    var yearView by remember { mutableStateOf(false) }
-    val open = remember { mutableStateMapOf<String, Boolean>() }
+    var anchor by remember { mutableStateOf(start ?: today) }
+    val open = remember { mutableStateMapOf<String, Boolean>().apply { openCategory?.let { put(it, true) } } }
     val c = C.colors
 
     val period = Periods.periodFor(anchor, d.settings)
@@ -86,33 +89,19 @@ fun MonthScreen() {
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
-            .pointerInput(period, yearView) {
+            .pointerInput(period) {
                 var total = 0f
                 detectHorizontalDragGestures(
                     onDragEnd = {
-                        if (!yearView) {
-                            if (total > 120) anchor = Periods.previous(period, d.settings).start
-                            if (total < -120 && canGoNext) anchor = Periods.next(period, d.settings).start
-                        }
+                        if (total > 120) anchor = Periods.previous(period, d.settings).start
+                        if (total < -120 && canGoNext) anchor = Periods.next(period, d.settings).start
                         total = 0f
                     },
                 ) { _, dx -> total += dx }
             },
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Spacer(Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (yearView) "Jahr" else "Monat", style = MaterialTheme.typography.headlineMedium, color = c.fg, modifier = Modifier.weight(1f))
-            Pill("Monat", !yearView, { yearView = false })
-            Spacer(Modifier.padding(3.dp))
-            Pill("Jahr", yearView, { yearView = true })
-        }
-
-        if (yearView) {
-            YearView { p -> anchor = p.start; yearView = false }
-            Spacer(Modifier.height(110.dp))
-            return@Column
-        }
+        ScreenHeader("Monat", onBack = { ui.back() })
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Arrow("‹") { anchor = Periods.previous(period, d.settings).start }
@@ -121,6 +110,17 @@ fun MonthScreen() {
                 Text(period.rangeLabel, style = MaterialTheme.typography.bodySmall, color = c.muted)
             }
             Arrow("›", enabled = canGoNext) { anchor = Periods.next(period, d.settings).start }
+        }
+
+        compareText(d, sum, prevSum, today)?.let { (better, text) ->
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(c.soft3).padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Mascot(if (better) Mood.CHEER else Mood.HAPPY, size = 36.dp)
+                Spacer(Modifier.width(10.dp))
+                Text(text, style = MaterialTheme.typography.bodyMedium, color = c.fg)
+            }
         }
 
         Group {
@@ -254,70 +254,6 @@ private const val CASH = "_cash"
 private const val SAVED = "_saved"
 
 @Composable
-private fun YearView(onOpen: (Period) -> Unit) {
-    val d by Store.data.collectAsState()
-    val today = LocalDate.now()
-    val c = C.colors
-    var year by remember { mutableStateOf(Periods.periodFor(today, d.settings).let { it.start.plusDays(14).year }) }
-    val plan = remember(d, year) { Budget.year(d, year, today) }
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Arrow("‹") { year-- }
-        Text("$year", style = MaterialTheme.typography.titleLarge, color = c.fg, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-        Arrow("›", enabled = year <= today.year) { year++ }
-    }
-    Group {
-        Column(Modifier.padding(16.dp)) {
-            Text("Fixkosten im ganzen Jahr", style = MaterialTheme.typography.bodyMedium, color = c.muted)
-            Text(Money.format(plan.fixedTotal), style = MaterialTheme.typography.headlineMedium, color = c.fg)
-            Text("im Schnitt ${Money.format(plan.fixedPerMonth)} pro Monat", style = MaterialTheme.typography.bodySmall, color = c.muted)
-        }
-    }
-    Group {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
-            Text("Monat", style = MaterialTheme.typography.labelMedium, color = c.muted, modifier = Modifier.weight(1.1f))
-            Text("rein", style = MaterialTheme.typography.labelMedium, color = c.muted, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
-            Text("fest", style = MaterialTheme.typography.labelMedium, color = c.muted, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
-            Text("frei", style = MaterialTheme.typography.labelMedium, color = c.muted, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
-        }
-        // Monate vor dem ersten Eintrag sind leer und bleiben weg.
-        val shown = plan.months.dropWhile { it.income == 0L && it.fixed == 0L && it.reserve == 0L && it.spent == 0L && it.period.end.isBefore(today) }
-        if (shown.isEmpty()) Hint("Für dieses Jahr gibt es noch nichts.", Modifier.padding(16.dp))
-        shown.forEach { s ->
-            GroupDivider()
-            val past = s.period.end.isBefore(today)
-            val now = today in s.period
-            val tone = when { now -> c.primary; past -> c.muted; else -> c.fg }
-            Column(Modifier.fillMaxWidth().clickable { onOpen(s.period) }.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                Row {
-                    Text(monthAbbr[s.period.start.plusDays(14).monthValue - 1], style = RowTitle, color = tone, modifier = Modifier.weight(1.1f))
-                    Text(Money.short(s.income), style = MaterialTheme.typography.bodyMedium, color = tone, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
-                    Text(Money.short(s.fixed + s.reserve), style = MaterialTheme.typography.bodyMedium, color = tone, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
-                    Text(
-                        (if (past && s.free > 0) "+" else "") + Money.short(s.free),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = if (s.free < 0) c.warn else if (now) c.primary else c.fg,
-                        textAlign = TextAlign.End, modifier = Modifier.weight(1f),
-                    )
-                }
-                // Große Rechnungen in diesem Monat: bezahlt der Topf oder belastet der Rest den Monat?
-                s.potBills.forEach { b ->
-                    val rest = b.amount - b.fromPot
-                    Text(
-                        "${b.recurring.name} ${Money.short(b.amount)}" + if (rest > b.recurring.intervalMonths) ", ${Money.short(rest)} fehlen in der Rücklage" else ", aus der Rücklage",
-                        style = MaterialTheme.typography.bodySmall, color = if (rest > b.recurring.intervalMonths) c.warn else c.muted,
-                    )
-                }
-                s.fixedItems.filter { it.recurring.intervalMonths > 1 && !it.recurring.spread }.forEach { o ->
-                    Text("${o.recurring.name} ${Money.short(o.amount)}", style = MaterialTheme.typography.bodySmall, color = c.warn)
-                }
-            }
-        }
-    }
-    Hint("Vorbei: was übrig blieb. Jetzt: was noch frei ist. Danach: was zum Ausgeben bereitsteht, wenn nichts dazukommt. Tippen öffnet den Monat.")
-}
-
-@Composable
 private fun Arrow(t: String, enabled: Boolean = true, onClick: () -> Unit) {
     Box(
         Modifier.size(40.dp).clip(CircleShape).background(if (enabled) C.colors.surface else C.colors.bg)
@@ -326,4 +262,21 @@ private fun Arrow(t: String, enabled: Boolean = true, onClick: () -> Unit) {
     ) { Text(t, fontSize = 24.sp, color = if (enabled) C.colors.fg else C.colors.line) }
 }
 
-private val monthAbbr = listOf("Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez.")
+
+/**
+ * Vergleich mit dem Vormonat bei den eigenen Ausgaben. Im laufenden Monat bis zum gleichen Tag,
+ * sonst der ganze Monat. Null, wenn es nichts Sinnvolles zu vergleichen gibt.
+ */
+private fun compareText(d: de.kewl.cashdy.data.AppData, sum: de.kewl.cashdy.domain.Summary, prev: de.kewl.cashdy.domain.Summary, today: LocalDate): Pair<Boolean, String>? {
+    if (sum.period.start.isAfter(today) || prev.entries.isEmpty() || sum.entries.isEmpty()) return null
+    val running = today in sum.period
+    val cm = d.settings.cashMode
+    val upTo = if (running) prev.period.start.plusDays(java.time.temporal.ChronoUnit.DAYS.between(sum.period.start, today)) else prev.period.end
+    val before = prev.entries.filter { !it.date.isAfter(upTo) }.sumOf { Budget.spendingValue(it, cm) }
+    val diff = sum.spent - before
+    if (kotlin.math.abs(diff) < 500) return null
+    val name = prev.period.shortLabel
+    val whenText = if (running) "als im $name bis zum ${upTo.dayOfMonth}." else "als im $name."
+    return if (diff < 0) true to "${Money.format(-diff)} weniger ausgegeben $whenText Stark!"
+    else false to "${Money.format(diff)} mehr ausgegeben $whenText Unten siehst du, wo."
+}

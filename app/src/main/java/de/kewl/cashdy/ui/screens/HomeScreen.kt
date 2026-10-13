@@ -188,7 +188,7 @@ fun HomeScreen() {
         // Die eine Zahl, auf die es ankommt.
         Box(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(c.hero)
-                .clickable { ui.go(Route.Month) }.padding(18.dp),
+                .clickable { ui.go(Route.MonthDetail()) }.padding(18.dp),
         ) {
             Column {
                 Text(if (sum.free >= 0) "Noch frei" else "Drüber", style = MaterialTheme.typography.titleSmall, color = c.heroFg.copy(alpha = 0.85f))
@@ -265,12 +265,12 @@ fun HomeScreen() {
                 ValueRow("Rücklage", "− " + Money.format(sum.reserve), note = "für Jahres- und Quartalskosten", onClick = { ui.go(Route.Fixed) })
             }
             GroupDivider()
-            ValueRow("Ausgegeben", "− " + Money.format(sum.spent), onClick = { ui.go(Route.Month) })
+            ValueRow("Ausgegeben", "− " + Money.format(sum.spent), onClick = { ui.go(Route.MonthDetail()) })
             if (sum.saved > 0) {
                 GroupDivider()
                 ValueRow(
                     "Gespart", "− " + Money.format(sum.saved), valueColor = c.good,
-                    note = "dieses Jahr schon ${Money.format(Budget.savedInYear(d, today.year))}", onClick = { ui.go(Route.Month) },
+                    note = "dieses Jahr schon ${Money.format(Budget.savedInYear(d, today.year))}", onClick = { ui.go(Route.MonthDetail()) },
                 )
             }
             GroupDivider()

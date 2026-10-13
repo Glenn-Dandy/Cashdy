@@ -13,7 +13,11 @@ import java.time.LocalDate
 
 sealed interface Route {
     data object Home : Route
-    data object Month : Route
+    data object Stats : Route
+    /** Ein Monat mit allen Einträgen. [start] null = der laufende, [openCategory] schon aufgeklappt. */
+    data class MonthDetail(val start: LocalDate? = null, val openCategory: String? = null) : Route
+    /** Verlauf einer Kategorie über 6 Monate oder ein Jahr. */
+    data class CategoryStats(val categoryId: String, val year: Int? = null) : Route
     data object Fixed : Route
     data object More : Route
     data class RecurringEdit(val id: String?, val income: Boolean = false, val fromDetected: String? = null) : Route
@@ -29,7 +33,7 @@ sealed interface Route {
     data object Help : Route
 }
 
-val Tabs = listOf(Route.Home, Route.Month, Route.Fixed, Route.More)
+val Tabs = listOf(Route.Home, Route.Stats, Route.Fixed, Route.More)
 
 /** Was das Eingabe-Sheet vorbelegen soll. */
 data class AddRequest(
@@ -78,7 +82,7 @@ class Ui {
         when {
             route.startsWith("inbox") -> { go(Route.Home); go(Route.Inbox(route.substringAfter('/', "").ifBlank { null })) }
             route == "wallet" -> { go(Route.Home); go(Route.Wallet) }
-            route == "month" -> go(Route.Month)
+            route == "month" -> { go(Route.Stats); go(Route.MonthDetail()) }
             route == "fixed" -> go(Route.Fixed)
             else -> go(Route.Home)
         }

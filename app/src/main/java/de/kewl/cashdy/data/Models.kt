@@ -184,6 +184,8 @@ data class Settings(
     val startBalance: Cents? = null,
     /** Zuletzt gewählte Ansichten, damit sie beim nächsten Öffnen wieder so sind. */
     val fixedView: FixedView = FixedView.CATEGORY,
+    /** Statistik: true = ganzes Jahr, false = die letzten 6 Monate. */
+    val statsYear: Boolean = false,
     val monthView: MonthView = MonthView.CATEGORY,
 ) {
     companion object {
