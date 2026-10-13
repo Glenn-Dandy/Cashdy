@@ -126,4 +126,18 @@ class NotificationParserTest {
         assertEquals(722L, p.amount)
         assertTrue(p.paypalViaBank)
     }
+
+    // Echte Meldungen vom 13.10.2026: dieselbe Zahlung über DKB und Google Wallet.
+    @Test fun dkbNewPaymentSuccessful() {
+        val p = NotificationParser.parse(dkbNew, "Zahlung erfolgreich", "10,33 EUR (10,33 EUR), Sonderpreis Baumarkt, Visa Debitkarte ****2555")!!
+        assertEquals(DetectedKind.EXPENSE, p.kind)
+        assertEquals(1033L, p.amount)
+        assertEquals("Sonderpreis Baumarkt", p.merchant)
+    }
+
+    @Test fun walletSameBaumarkt() {
+        val p = NotificationParser.parse("com.google.android.apps.walletnfcrel", "Sonderpreis Baumarkt", "10,33 € mit Visa Debitkarte ••2555")!!
+        assertEquals(1033L, p.amount)
+        assertEquals("Sonderpreis Baumarkt", p.merchant)
+    }
 }

@@ -113,6 +113,14 @@ object NotificationParser {
                 if (isPlausibleMerchant(cand)) return Merchants.pretty(cand)
             }
         }
+        // DKB: "10,33 EUR (10,33 EUR), Sonderpreis Baumarkt, Visa Debitkarte ****2555".
+        // Der Händler steht zwischen Kommas, ohne Betrag und ohne Kartenangabe.
+        for (part in text.replace('\n', ' ').split(Regex(""",\s+"""))) {
+            val p = part.trim()
+            if (p.isEmpty() || amountAfter.containsMatchIn(p) || amountBefore.containsMatchIn(p) || cardWords.any { p.lowercase().contains(it) }) continue
+            val cand = clean(p)
+            if (isPlausibleMerchant(cand) && !cand.contains(Regex("""\d+[,.]\d{2}"""))) return Merchants.pretty(cand)
+        }
         // Manche Apps schreiben den Händler in den Titel ("REWE" / "12,49 € bezahlt").
         val t = clean(title)
         if (isPlausibleMerchant(t) && !t.contains(Regex("""\d+[,.]\d{2}"""))) return Merchants.pretty(t)
@@ -132,10 +140,16 @@ object NotificationParser {
         "visa", "mastercard", "debitkarte", "kreditkarte", "dein konto", "ihr konto", "du", "sie", "dich",
     )
 
+    private val cardWords = listOf("visa", "mastercard", "debitkarte", "kreditkarte", "girocard", "karte", "****", "••")
+
+    // Überschriften wie "Zahlung erfolgreich" oder "Umsatz vorgemerkt (*2872)" sind nie ein Händler.
+    private val statusWords = listOf("erfolgreich", "vorgemerkt", "gebucht", "ausgeführt", "autorisiert", "genehmigt")
+
     private fun isPlausibleMerchant(s: String): Boolean {
         if (s.length < 2 || s.length > 50) return false
         val l = s.lowercase()
         if (l in notMerchant) return false
+        if (statusWords.any { l.contains(it) }) return false
         if (!s.any { it.isLetter() }) return false
         if (l.startsWith("deine ") || l.startsWith("ihre ") || l.startsWith("dein ") || l.startsWith("ihr ")) return false
         return true

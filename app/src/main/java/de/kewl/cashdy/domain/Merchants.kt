@@ -52,7 +52,7 @@ object Merchants {
         listOf("h&m", "zara", "zalando", "primark", "c&a", "about you", "deichmann", "snipes", "tk maxx", "only", "jack & jones") to C.CLOTHES,
         listOf("kino", "cinema", "steam", "playstation", "nintendo", "xbox", "thalia", "hugendubel", "eventim", "ticket", "spielwaren", "lego", "museum", "zoo", "fitness", "mcfit", "urban sports") to C.FUN,
         listOf("apotheke", "arzt", "zahnarzt", "praxis", "optik", "fielmann", "physio", "shop apotheke", "docmorris") to C.HEALTH,
-        listOf("dm ", "dm-", "dm drogerie", "rossmann", "müller", "mueller", "ikea", "obi", "hornbach", "bauhaus", "toom", "tedi", "action", "kik", "woolworth", "depot") to C.HOUSEHOLD,
+        listOf("dm ", "dm-", "dm drogerie", "rossmann", "müller", "mueller", "ikea", "obi", "hornbach", "bauhaus", "toom", "baumarkt", "tedi", "action", "kik", "woolworth", "depot") to C.HOUSEHOLD,
         listOf("miete", "wohnungs", "hausverwaltung", "vonovia", "nebenkosten", "wohnbau") to C.HOME,
         listOf("stadtwerke", "strom", "e.on", "eon", "vattenfall", "enbw", "rwe", "gas", "tibber", "octopus", "ostrom", "fernwärme") to C.ENERGY,
         listOf("netflix", "spotify", "disney", "amazon prime", "prime video", "youtube", "apple.com", "apple music", "dazn", "sky ", "wow ", "audible", "rundfunk", "ard zdf", "beitragsservice", "chatgpt", "openai", "anthropic", "claude", "icloud", "google one") to C.SUBS,

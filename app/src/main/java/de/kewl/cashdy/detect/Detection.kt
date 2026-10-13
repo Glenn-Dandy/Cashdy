@@ -72,7 +72,9 @@ object Detection {
         }
         if (twin != null) {
             // Der bessere Händlername gewinnt (PayPal/Wallet kennen ihn, die Bank oft nicht).
-            if (twin.merchant.isBlank() && det.merchant.isNotBlank()) {
+            val twinIsBank = NotificationParser.app(twin.pkg)?.bank ?: true
+            val newIsBank = app?.bank ?: true
+            if (det.merchant.isNotBlank() && (twin.merchant.isBlank() || (twinIsBank && !newIsBank))) {
                 data = data.copy(detected = data.detected.map { if (it.id == twin.id) it.copy(merchant = det.merchant) else it })
             }
             det = det.copy(status = DetectedStatus.MERGED, mergeNote = "Doppelt gemeldet, gleich wie ${twin.sourceName}")

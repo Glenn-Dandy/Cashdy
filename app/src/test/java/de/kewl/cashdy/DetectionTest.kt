@@ -135,4 +135,12 @@ class DetectionTest {
         val (_, r2) = Detection.handle(d1, dkbNew, "Lastschrift", "-10,99 Euro an freenet DLS GmbH", t0 + 86_400_000L)
         assertTrue(r2 is DetectionResult.Pending)
     }
+
+    @Test fun walletNameWinsOverBankWhenMerged() {
+        val (d1, r1) = Detection.handle(AppData(), dkbNew, "Zahlung erfolgreich", "10,33 EUR (10,33 EUR), Baumarkt Kasse 3, Visa Debitkarte ****2555", t0)
+        r1 as DetectionResult.Pending
+        val (d2, r2) = Detection.handle(d1, wallet, "Sonderpreis Baumarkt", "10,33 € mit Visa Debitkarte ••2555", t0 + 30_000)
+        assertTrue(r2 is DetectionResult.Merged)
+        assertEquals("Sonderpreis Baumarkt", d2.detected.first { it.id == r1.detected.id }.merchant)
+    }
 }
