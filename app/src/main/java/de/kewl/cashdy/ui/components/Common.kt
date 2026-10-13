@@ -320,11 +320,7 @@ fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (
         (if (withCash) "Konto und Bargeld am " else "Kontostand am ") + startDay.format(dm), Money.format(start),
         note = "Startmonat, ab dem ${sum.period.end.plusDays(1).format(dm)} rechne ich normal", onClick = onClick,
     )
-    if (sum.startPot > 0) {
-        GroupDivider()
-        ValueRow("Davon Rücklage", "− " + Money.format(sum.startPot), note = "bleibt auf dem Konto liegen", onClick = onClick)
-    }
-    val rest = sum.income - start + sum.startPot
+    val rest = sum.income - start
     if (rest != 0L) {
         GroupDivider()
         ValueRow("Kommt noch rein", Money.format(rest), onClick = onClick)

@@ -32,8 +32,6 @@ data class Summary(
     val byCategory: List<CategorySum>,
     /** Nur im Startmonat: Kontostand plus Bargeld am Starttag. Steckt schon in [income]. */
     val startMoney: Cents? = null,
-    /** Nur im Startmonat: davon schon Rücklage, die liegen bleibt. Ist von [income] schon abgezogen. */
-    val startPot: Cents = 0,
 )
 
 data class YearPlan(val year: Int, val months: List<Summary>, val fixedTotal: Cents) {
@@ -68,6 +66,12 @@ object Budget {
         for (r in d.recurring) {
             if (r.income) {
                 incomeItems += incomeOccurrences(r, p, s.periodMode).filter { open(it.date) }
+            } else if (r.spread && r.intervalMonths > 1 && startDay != null) {
+                // Startmonat: Der Topf fängt erst im nächsten Monat an. Seltene Rechnungen nach dem
+                // Starttag gehen voll vom Kontostand ab, ohne Rücklage.
+                for (due in Recurrence.dueDates(r, p.start, p.end).filter(::open)) {
+                    fixedItems += Occurrence(r, due, Recurrence.priceAt(r, due))
+                }
             } else if (r.spread && r.intervalMonths > 1) {
                 val share = Reserve.shareIn(d, r, p)
                 if (share > 0) reserveItems += Occurrence(r, p.start, share)
@@ -93,15 +97,7 @@ object Budget {
         val spent = counted.sumOf { spendingValue(it, s.cashMode) }
         // Bargeld zählt nur im Portemonnaie-Modus, im Einfach-Modus ist es schon ausgegeben.
         val startMoney = startDay?.let { s.startBalance!! + if (s.cashMode == CashMode.WALLET) walletAtStart(d, it) else 0 }
-        // Was schon in der Rücklage liegt, steckt im Kontostand, ist aber nicht frei.
-        val startPot = startDay?.let { day ->
-            d.recurring.sumOf { r ->
-                if (!r.spread || r.intervalMonths <= 1 || r.income) 0L
-                else Recurrence.nextDue(r, day.plusDays(1))?.let { Reserve.savedFor(d, r, it, p.start.minusDays(1)) } ?: 0L
-            }
-        }
-
-        val income = (startMoney ?: 0) - (startPot ?: 0) + incomeItems.sumOf { it.amount } + oneOffIncome
+        val income = (startMoney ?: 0) + incomeItems.sumOf { it.amount } + oneOffIncome
         val fixed = fixedItems.sumOf { it.amount }
         val reserve = reserveItems.sumOf { it.amount }
         val free = income - fixed - reserve - spent
@@ -126,7 +122,7 @@ object Budget {
         val byCategory = cat.filter { it.value > 0 }.map { CategorySum(it.key, it.value) }.sortedByDescending { it.amount }
 
         return Summary(p, income, fixed, reserve, spent, free, perDay, daysLeft,
-            incomeItems, fixedItems, reserveItems, entries, potBills, byCategory, startMoney, startPot ?: 0)
+            incomeItems, fixedItems, reserveItems, entries, potBills, byCategory, startMoney)
     }
 
     /**

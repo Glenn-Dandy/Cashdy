@@ -108,14 +108,15 @@ private fun RestartDialog(onDone: () -> Unit) {
                 SettingSwitch("Konto ist im Minus", "Zum Beispiel im Dispo", minus) { minus = it }
                 Hint(
                     (if (wallet && Budget.wallet(d) > 0) "Dein Bargeld (gerade ${Money.format(Budget.wallet(d))}) rechne ich dazu. " else "") +
-                        "Es wird nichts gelöscht, deine Einträge und Fixkosten bleiben."
+                        "Es wird nichts gelöscht, deine Einträge und Fixkosten bleiben. Die Rücklage fängt im nächsten Monat neu an."
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 val v = Money.parse(balance) ?: return@TextButton
-                Store.update { it.copy(settings = it.settings.copy(startDay = today, startBalance = if (minus) -v else v)) }
+                // Der Topf fängt im nächsten Monat leer neu an, bis dahin zählt jede Rechnung voll.
+                Store.update { it.copy(settings = it.settings.copy(startDay = today, startBalance = if (minus) -v else v, potStart = end)) }
                 onDone()
             }, enabled = Money.parse(balance) != null) { Text("Neu anfangen") }
         },

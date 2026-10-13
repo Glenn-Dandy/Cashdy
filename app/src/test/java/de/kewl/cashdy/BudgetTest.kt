@@ -164,23 +164,28 @@ class BudgetTest {
         assertEquals(-20_000L, Budget.summary(simple, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 13)).startMoney)
     }
 
-    @Test fun restartKeepsPotMoney() {
-        // Rücklage läuft seit Januar, Neustart am 12.10. mit 2.000 € auf dem Konto. Darin stecken
-        // Januar bis September Kfz-Rücklage (9 x 50 €), die bleiben liegen. Der Oktober legt wie
-        // gewohnt seinen Anteil zurück.
+    @Test fun restartCountsRareBillsInFull() {
+        // Rücklage lief seit Januar, Neustart am 12.10. mit 2.000 € auf dem Konto. Die
+        // Quartalsrechnung am 20.10. geht im Startmonat voll ab, ohne Rücklage. Der Topf fängt im
+        // November leer an.
+        val quarter = Recurring("q", "Quartal", intervalMonths = 3, firstDue = d(2026, 1, 20), spread = true, prices = listOf(PriceStep(d(2026, 1, 20), 12_000)))
         val data = AppData(
-            recurring = listOf(salary, car),
+            recurring = listOf(salary, car, quarter),
             entries = listOf(
                 Entry("w", 10_000, d(2026, 9, 1), EntryKind.CASH_WITHDRAWAL),
                 Entry("b", 1_500, d(2026, 9, 2), EntryKind.EXPENSE, "food", method = PayMethod.CASH),
             ),
-            settings = Settings(potStart = d(2026, 1, 1), startDay = d(2026, 10, 12), startBalance = 200_000),
+            settings = Settings(potStart = d(2026, 11, 1), startDay = d(2026, 10, 12), startBalance = 200_000),
         )
         val oct = Budget.summary(data, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 12))
         assertEquals(200_000L + 8_500, oct.startMoney) // Portemonnaie: 100 € abgehoben, 15 € bar bezahlt
-        assertEquals(45_000L, oct.startPot)
-        assertEquals(208_500L - 45_000 + 300_000, oct.income)
-        assertEquals(5_000L, oct.reserve)
+        assertEquals(208_500L + 300_000, oct.income)
+        assertEquals(12_000L, oct.fixed)
+        assertEquals(0L, oct.reserve)
+        // November: Kfz am 15.11. hat erst den November-Anteil im Topf, der Rest zählt im November.
+        val nov = Budget.summary(data, Periods.calendar(d(2026, 11, 1)), d(2026, 11, 1))
+        assertEquals(60_000L - 5_000, nov.fixed)
+        assertEquals(5_000L + 4_000, nov.reserve)
     }
 
     @Test fun startMonthUntilNextSalary() {

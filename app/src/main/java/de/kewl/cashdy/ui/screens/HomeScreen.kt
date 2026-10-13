@@ -42,6 +42,8 @@ import de.kewl.cashdy.detect.Detection
 import de.kewl.cashdy.detect.PaymentListenerService
 import de.kewl.cashdy.domain.Budget
 import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.domain.PotStatus
+import de.kewl.cashdy.domain.Reserve
 import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.domain.Recurrence
 import de.kewl.cashdy.domain.Summary
@@ -292,7 +294,7 @@ fun HomeScreen() {
                     }
                     ValueRow(
                         r.name, Money.format(Recurrence.priceAt(r, due)),
-                        note = whenText + if (r.spread && r.intervalMonths > 1) ", aus der Rücklage" else "",
+                        note = whenText + potNote(Reserve.status(d, r, today)),
                         onClick = { ui.go(Route.RecurringEdit(r.id)) },
                     )
                 }
@@ -307,4 +309,11 @@ private fun Chip(text: String) {
     Box(Modifier.clip(RoundedCornerShape(50)).background(C.colors.surface).padding(horizontal = 10.dp, vertical = 4.dp)) {
         Text(text, style = MaterialTheme.typography.labelMedium, color = C.colors.muted, fontWeight = FontWeight.Medium)
     }
+}
+
+/** Zahlt der Topf die Rechnung? Ganz, zum Teil oder gar nicht (zum Beispiel im Startmonat). */
+private fun potNote(p: PotStatus?): String = when {
+    p == null || p.savedAtDue == 0L -> ""
+    p.missing == 0L -> ", aus der Rücklage"
+    else -> ", ${Money.format(p.missing)} davon extra"
 }

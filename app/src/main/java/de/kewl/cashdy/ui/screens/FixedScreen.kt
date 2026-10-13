@@ -274,10 +274,13 @@ private fun PotRow(p: PotStatus, onClick: () -> Unit) {
             val f = if (p.bill > 0) (p.savedNow.toFloat() / p.bill).coerceIn(0f, 1f) else 0f
             Box(Modifier.fillMaxWidth(f).height(6.dp).clip(RoundedCornerShape(50)).background(c.coin))
         }
+        // Noch gar nichts angespart (Startmonat oder gerade erst angelegt): keine Warnung, nur erklären.
+        val fresh = p.savedAtDue == 0L
         Text(
-            "${Money.format(p.savedNow)} von ${Money.format(p.bill)} angespart" +
+            if (fresh) "Die Rechnung im ${p.nextDue.format(monthFmt)} zählt noch ganz bei „Fest“. Danach spare ich jeden Monat dafür an."
+            else "${Money.format(p.savedNow)} von ${Money.format(p.bill)} angespart" +
                 if (p.missing > 0) ", bis zur Fälligkeit fehlen ${Money.format(p.missing)}. Die zählen im ${p.nextDue.format(monthFmt)} extra." else "",
-            style = MaterialTheme.typography.bodySmall, color = if (p.missing > 0) c.warn else c.muted, modifier = Modifier.padding(top = 4.dp),
+            style = MaterialTheme.typography.bodySmall, color = if (p.missing > 0 && !fresh) c.warn else c.muted, modifier = Modifier.padding(top = 4.dp),
         )
     }
 }
