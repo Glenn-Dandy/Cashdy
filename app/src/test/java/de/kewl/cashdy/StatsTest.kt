@@ -49,7 +49,7 @@ class StatsTest {
         assertEquals(Trend.SAME, Stats.trend(listOf(30_000, 29_000, 31_000, 30_000)))
         val months = Stats.lastMonths(data(), today)
         val tips = Stats.insights(data(), months, Stats.categories(data(), months), today)
-        assertTrue(tips.toString(), tips.first().contains("Lebensmittel") && tips.first().contains("100,00 €"))
+        assertTrue(tips.toString(), tips.first().text.contains("Lebensmittel") && tips.first().text.contains("100,00 €"))
     }
 
     @Test fun fixedPerMonthAndYear() {
@@ -66,5 +66,23 @@ class StatsTest {
         val top = Stats.topMerchants(data(), "food", months)
         assertEquals("REWE", top.first().first)
         assertEquals(3, top.first().third)
+    }
+
+    @Test fun takeawayHintLooksSkeptical() {
+        val fast = (1..5).map { Entry("t$it", 1_290, d(2026, 9, it * 3), EntryKind.EXPENSE, "takeaway", merchant = "McDonald's") }
+        val data = data().copy(entries = data().entries + fast)
+        val months = Stats.lastMonths(data, today)
+        val tip = Stats.insights(data, months, Stats.categories(data, months), today).first { it.tone == de.kewl.cashdy.domain.Insight.Tone.DOUBT }
+        assertTrue(tip.text, tip.text.contains("5 Mal") && tip.text.contains("64,50 €") && tip.text.contains("774 €"))
+    }
+
+    @Test fun fastFoodChainsLandInTakeaway() {
+        val m = de.kewl.cashdy.domain.Merchants
+        listOf("McDonald's", "BURGER KING 1234", "Subway Hbf", "Lieferando.de", "Uber Eats", "Backwerk", "Kamps Bäckerei", "Döner Express").forEach {
+            assertEquals(it, "takeaway", m.guess(it))
+        }
+        assertEquals("eating", m.guess("Pizzeria Roma"))
+        assertEquals("food", m.guess("Bäckerei Schmidt"))
+        assertEquals("fuel", m.guess("Uber BV"))
     }
 }

@@ -38,8 +38,16 @@ object Merchants {
     }
 
     private val keywords: List<Pair<List<String>, String>> = listOf(
+        // Fast Food, Snacks, Coffee to go und Lieferdienste. Steht vor den Lebensmitteln, damit
+        // „Kamps Bäckerei“ oder „Backwerk“ hier landen und nicht beim Wocheneinkauf.
+        listOf(
+            "mcdonald", "mc donald", "burger king", "burgerking", "kfc", "subway", "five guys", "domino", "pizza hut", "nordsee",
+            "starbucks", "coffee fellows", "dunkin", "tim hortons", "backwerk", "back-werk", "back factory", "backfactory", "kamps",
+            "ditsch", "le crobag", "yormas", "dean & david", "dean&david", "lieferando", "wolt", "uber eats", "ubereats", "just eat",
+            "foodora", "döner", "doener", "kebab", "imbiss", "pommes", "snack", "burger",
+        ) to C.TAKEAWAY,
         listOf("rewe", "edeka", "aldi", "lidl", "netto", "penny", "kaufland", "norma", "globus", "tegut", "real", "hit ", "nahkauf", "bäckerei", "baeckerei", "backhaus", "metzgerei", "flink", "picnic", "getir") to C.FOOD,
-        listOf("mcdonald", "burger", "kfc", "subway", "lieferando", "wolt", "uber eats", "pizza", "restaurant", "cafe", "café", "starbucks", "döner", "doener", "imbiss", "bar ", "nordsee") to C.EATING,
+        listOf("pizza", "pizzeria", "restaurant", "ristorante", "trattoria", "gasthaus", "gaststätte", "wirtshaus", "brauhaus", "cafe", "café", "bistro", "sushi", "bar ") to C.EATING,
         listOf("aral", "shell", "esso", "jet", "total", "avia", "agip", "tankstelle", "db vertrieb", "deutsche bahn", "bvg", "mvg", "hvv", "flixbus", "uber", "bolt", "tier", "parken", "parkhaus", "easypark") to C.FUEL,
         listOf("h&m", "zara", "zalando", "primark", "c&a", "about you", "deichmann", "snipes", "tk maxx", "only", "jack & jones") to C.CLOTHES,
         listOf("kino", "cinema", "steam", "playstation", "nintendo", "xbox", "thalia", "hugendubel", "eventim", "ticket", "spielwaren", "lego", "museum", "zoo", "fitness", "mcfit", "urban sports") to C.FUN,

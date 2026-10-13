@@ -22,6 +22,11 @@ data class FixedStat(val categoryId: String?, val perMonth: Cents, val perYear: 
 
 enum class Trend { LESS, MORE, SAME }
 
+/** Ein Satz der Münze. [Tone.DOUBT]: Spar-Hinweis, die Münze schaut skeptisch. */
+data class Insight(val text: String, val tone: Tone = Tone.PRAISE) {
+    enum class Tone { PRAISE, HINT, DOUBT }
+}
+
 /**
  * Zahlen für die Statistik-Seite. Alles hier rechnet nur mit [Budget.summary], damit
  * Statistik und Monatsseite nie verschiedene Beträge zeigen.
@@ -98,11 +103,11 @@ object Stats {
             .sortedByDescending { it.perMonth }
 
     /**
-     * Höchstens zwei freundliche Sätze: was gut lief, was teurer wurde, der beste Monat.
+     * Höchstens drei Sätze: was gut lief, wo sich Sparen lohnen könnte, was teurer wurde, der beste Monat.
      * Nie ein Vorwurf.
      */
-    fun insights(d: AppData, months: List<MonthStat>, cats: List<CategoryStat>, today: LocalDate): List<String> {
-        val out = mutableListOf<String>()
+    fun insights(d: AppData, months: List<MonthStat>, cats: List<CategoryStat>, today: LocalDate): List<Insight> {
+        val out = mutableListOf<Insight>()
         val used = months.filter { it.used }
         val done = used.filter { it.done }
 
@@ -117,7 +122,19 @@ object Stats {
                 (c to (avg - v).toLong()).takeIf { avg >= 2000 && v < avg * 0.8 && avg - v >= 1000 }
             }.maxByOrNull { it.second }?.let { (c, diff) ->
                 val name = d.category(c.categoryId)?.name ?: "Sonstiges"
-                out += "Für $name hast du im ${last.period.shortLabel} ${Money.format(diff)} weniger ausgegeben als sonst. Stark!"
+                out += Insight("Für $name hast du im ${last.period.shortLabel} ${Money.format(diff)} weniger ausgegeben als sonst. Stark!")
+            }
+        }
+
+        // Essen unterwegs: oft und zusammen spürbar? Dann ein Blick aufs Jahr.
+        if (last != null) {
+            val es = last.sum.entries.filter { it.kind == EntryKind.EXPENSE && it.categoryId == DefaultCategories.TAKEAWAY }
+            val sum = es.sumOf { it.amount }
+            if (es.size >= 4 && sum >= 3000) {
+                out += Insight(
+                    "Essen unterwegs: im ${last.period.shortLabel} ${es.size} Mal, zusammen ${Money.format(sum)}. Aufs Jahr wären das etwa ${Money.short(sum * 12)}.",
+                    Insight.Tone.DOUBT,
+                )
             }
         }
 
@@ -132,16 +149,16 @@ object Stats {
             }
             .maxByOrNull { it.third }
             ?.let { (r, step, diff) ->
-                out += "${r.name} kostet seit ${step.from.format(monthFmt)} ${Money.format(diff)} mehr. Vielleicht lohnt sich ein Vergleich."
+                out += Insight("${r.name} kostet seit ${step.from.format(monthFmt)} ${Money.format(diff)} mehr. Vielleicht lohnt sich ein Vergleich.", Insight.Tone.HINT)
             }
 
         // Der beste Monat.
-        if (out.size < 2 && done.size >= 2) {
+        if (out.size < 3 && done.size >= 2) {
             done.maxByOrNull { it.sum.free }?.takeIf { it.sum.free > 0 }?.let {
-                out += "Im ${it.period.shortLabel} ist dir am meisten übrig geblieben: ${Money.format(it.sum.free)}."
+                out += Insight("Im ${it.period.shortLabel} ist dir am meisten übrig geblieben: ${Money.format(it.sum.free)}.")
             }
         }
-        return out.take(2)
+        return out.take(3)
     }
 
     /** Wo am meisten: Händler einer Kategorie mit Summe und Anzahl, größte zuerst. */

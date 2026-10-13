@@ -47,7 +47,7 @@ import kotlin.math.sin
  * HEART: im Minus, sie tröstet und hält dir ein Herz hin („Ich bin bei dir“).
  * CHEER: ein kleiner Erfolg, sie jubelt mit beiden Ärmchen.
  */
-enum class Mood { HAPPY, OK, STRONG, HEART, CHEER, PARTY, SLEEPY }
+enum class Mood { HAPPY, OK, STRONG, HEART, CHEER, PARTY, SLEEPY, SKEPTIC }
 
 /** Kleine Anstöße von außen, z. B. ein Hüpfer, wenn gerade etwas eingetragen wurde. */
 object MascotEvents {
@@ -132,6 +132,8 @@ fun Mascot(mood: Mood, modifier: Modifier = Modifier, size: Dp = 96.dp, animate:
                 Mood.CHEER -> { val k = pulse(beat, 0.6f, 0.86f); dy -= 5f * k; rot = -2f * k }
                 Mood.STRONG -> { val k = pulse(beat, 0.55f, 0.9f); dy -= 2f * k }
                 Mood.SLEEPY -> rot = 4f * sin(zT * 2 * PI).toFloat()
+                // Leicht schief gelegt, wie „na, ob das so klug ist?“
+                Mood.SKEPTIC -> rot = -6f + 1.5f * sin(beat * 2 * PI).toFloat()
                 else -> {}
             }
             dy -= 16f * sin(flip.value * PI).toFloat()
@@ -222,6 +224,13 @@ private fun DrawScope.face(s: Float, mood: Mood, open: Float) {
             drawPath(Path().apply { moveTo(32 * s, 48 * s); lineTo(38 * s, 41 * s); lineTo(44 * s, 48 * s) }, Ink, style = stroke(4f))
             drawPath(Path().apply { moveTo(56 * s, 48 * s); lineTo(62 * s, 41 * s); lineTo(68 * s, 48 * s) }, Ink, style = stroke(4f))
         }
+        Mood.SKEPTIC -> scale(1f, open, Offset(50 * s, 45 * s)) {
+            // Links zusammengekniffen, rechts offen, beide schauen zur Seite.
+            drawArc(Ink, 0f, 180f, true, Offset(34 * s, 42 * s), Size(10 * s, 8 * s))
+            drawLine(Ink, Offset(33 * s, 46 * s), Offset(45 * s, 46 * s), 2.6f * s, StrokeCap.Round)
+            drawCircle(Ink, 5f * s, Offset(63 * s, 45 * s))
+            drawCircle(Color.White, 1.6f * s, Offset(65.5f * s, 43.5f * s))
+        }
         else -> scale(1f, open, Offset(50 * s, 45 * s)) {
             val big = mood == Mood.CHEER
             val r = if (big) 6f else 5f
@@ -236,6 +245,11 @@ private fun DrawScope.face(s: Float, mood: Mood, open: Float) {
             }
         }
     }
+    if (mood == Mood.SKEPTIC) {
+        // Eine Braue tief, die andere hochgezogen.
+        drawPath(Path().apply { moveTo(32 * s, 39 * s); lineTo(45 * s, 40 * s) }, Ink, style = stroke(3f))
+        drawPath(Path().apply { moveTo(56 * s, 35 * s); quadraticTo(62 * s, 29 * s, 69 * s, 33 * s) }, Ink, style = stroke(3f))
+    }
     if (mood == Mood.STRONG) {
         drawPath(Path().apply { moveTo(32 * s, 37 * s); quadraticTo(38 * s, 33 * s, 44 * s, 36 * s) }, Ink, style = stroke(3f))
         drawPath(Path().apply { moveTo(56 * s, 36 * s); quadraticTo(62 * s, 33 * s, 68 * s, 37 * s) }, Ink, style = stroke(3f))
@@ -247,6 +261,7 @@ private fun DrawScope.face(s: Float, mood: Mood, open: Float) {
         Mood.HAPPY -> drawPath(Path().apply { moveTo(40 * s, 60 * s); quadraticTo(50 * s, 70 * s, 60 * s, 60 * s) }, Ink, style = stroke(4.5f))
         Mood.OK -> drawPath(Path().apply { moveTo(42 * s, 62 * s); quadraticTo(50 * s, 66 * s, 58 * s, 62 * s) }, Ink, style = stroke(4.5f))
         Mood.SLEEPY -> drawOval(Ink, Offset(46.5f * s, 60 * s), Size(7 * s, 6 * s))
+        Mood.SKEPTIC -> drawPath(Path().apply { moveTo(41 * s, 63 * s); cubicTo(46 * s, 60 * s, 52 * s, 64 * s, 59 * s, 60 * s) }, Ink, style = stroke(4f))
         Mood.PARTY -> drawPath(Path().apply { moveTo(38 * s, 59 * s); quadraticTo(50 * s, 76 * s, 62 * s, 59 * s); close() }, Ink)
         Mood.CHEER -> {
             val mouth = Path().apply { moveTo(36 * s, 57 * s); quadraticTo(50 * s, 77 * s, 64 * s, 57 * s); quadraticTo(50 * s, 61 * s, 36 * s, 57 * s); close() }

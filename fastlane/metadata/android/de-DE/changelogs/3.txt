@@ -1,0 +1,9 @@
+Statistik, Sparen und eine Münze, die genauer hinschaut:
+
+- **Statistik statt Monat:** Der Reiter zeigt 6 Monate oder ein ganzes Jahr: wie die Monate liefen, wohin dein Geld geht, was die Fixkosten im Monat und im Jahr kosten, wie viel du gespart hast und was der Münze aufgefallen ist. Tipp auf einen Monat öffnet ihn mit allen Einträgen und dem Vergleich zum Vormonat, Tipp auf eine Kategorie zeigt ihren Verlauf.
+- **Sparen:** Beim Eintragen gibt es „Sparen“. Geld fürs Sparkonto geht von „Noch frei“ ab, zählt aber nicht als ausgegeben. Am Monatsende sagt Cashdy, wie viel aufs Sparkonto darf und wie viel als Rücklage auf dem Konto bleiben soll.
+- **Essen unterwegs:** Neue Kategorie für Fast Food, Snacks, Coffee to go und Lieferdienste. McDonald's, Burger King, Lieferando und viele mehr landen dort von selbst. Die Münze schaut skeptisch und rechnet vor, was das aufs Jahr wäre.
+- **DKB-App:** Die Zahlungserkennung liest jetzt die aktuelle DKB-App. „Vorgemerkt“ und „gebucht“ zählen nur einmal.
+- **Vielleicht doppelt:** Gibt es genau den Betrag in diesem Monat schon, warnt Cashdy und trägt nichts automatisch ein.
+- **Ist Fixkosten:** Eine erkannte Zahlung lässt sich mit einem Tipp als Fixkosten übernehmen, schon ausgefüllt.
+- **Neu anfangen:** Im Startmonat zählen alle Rechnungen nach heute voll, die Rücklage fängt im nächsten Monat leer an.

@@ -214,6 +214,7 @@ data class AppData(
 object DefaultCategories {
     const val FOOD = "food"
     const val EATING = "eating"
+    const val TAKEAWAY = "takeaway"
     const val FUEL = "fuel"
     const val CLOTHES = "clothes"
     const val FUN = "fun"
@@ -235,6 +236,7 @@ object DefaultCategories {
     val all = listOf(
         Category(FOOD, "Lebensmittel", "🛒", 0xFFFFB37A),
         Category(EATING, "Essen gehen", "🍔", 0xFFFF8F70),
+        Category(TAKEAWAY, "Essen unterwegs", "🍟", 0xFFFFA25E),
         Category(FUEL, "Tanken & Fahren", "⛽", 0xFF7DA7FF),
         Category(CLOTHES, "Kleidung", "👕", 0xFFB59CFF),
         Category(FUN, "Freizeit & Geschenke", "🎁", 0xFFFF7EB6),

@@ -43,6 +43,7 @@ import de.kewl.cashdy.data.category
 import de.kewl.cashdy.domain.Budget
 import de.kewl.cashdy.domain.CategoryStat
 import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.domain.Insight
 import de.kewl.cashdy.domain.MonthStat
 import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.domain.Stats
@@ -166,7 +167,17 @@ fun StatsScreen() {
                     Text("Mir ist aufgefallen", style = MaterialTheme.typography.titleMedium, color = c.fg)
                 }
                 tips.forEach { t ->
-                    Text(t, Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface).padding(12.dp), style = MaterialTheme.typography.bodyMedium, color = c.fg)
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.surface).padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Beim Spar-Hinweis schaut die Münze skeptisch, sonst reicht die oben.
+                        if (t.tone == Insight.Tone.DOUBT) {
+                            Mascot(Mood.SKEPTIC, size = 40.dp)
+                            Spacer(Modifier.width(10.dp))
+                        }
+                        Text(t.text, style = MaterialTheme.typography.bodyMedium, color = c.fg)
+                    }
                 }
             }
         }
