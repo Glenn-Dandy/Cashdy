@@ -188,6 +188,19 @@ class BudgetTest {
         assertEquals(5_000L + 4_000, nov.reserve)
     }
 
+    @Test fun oldRestartGetsFreshPot() {
+        // Neustart mit einer älteren Version: Topf ohne Starttag. Nach dem Update fängt er im
+        // November an, im Oktober zählt die Quartalsrechnung voll, ohne „Davon Rücklage“.
+        val quarter = Recurring("q", "Quartal", intervalMonths = 3, firstDue = d(2026, 1, 20), spread = true, prices = listOf(PriceStep(d(2026, 1, 20), 12_597)))
+        val old = AppData(recurring = listOf(quarter), settings = Settings(startDay = d(2026, 10, 13), startBalance = 155_470))
+        val data = de.kewl.cashdy.data.Store.decode(de.kewl.cashdy.data.Store.encode(old))
+        assertEquals(d(2026, 11, 1), data.settings.potStart)
+        val oct = Budget.summary(data, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 13))
+        assertEquals(155_470L, oct.income)
+        assertEquals(12_597L, oct.fixed)
+        assertEquals(0L, oct.reserve)
+    }
+
     @Test fun startMonthUntilNextSalary() {
         // Monat ab Gehaltseingang: Start am 12.10., letztes Gehalt kam am 28.9. Der Startmonat
         // läuft bis zum nächsten Gehalt, das ist dann schon der nächste Zeitraum.

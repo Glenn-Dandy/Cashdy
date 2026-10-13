@@ -86,6 +86,12 @@ object Store {
         var st = withCats.settings
         // „Wenn Gehalt kommt“ gibt es nicht mehr: wird zum festen Tag am Gehaltstag.
         if (st.periodMode == PeriodMode.INCOME) st = st.copy(periodMode = PeriodMode.FIXED_DAY, periodStarts = emptyList())
+        // Früher ließ „Neu anfangen“ den Topf weiterlaufen, als wäre schon lange angespart.
+        // Jetzt fängt er nach dem Startmonat leer an.
+        st.startDay?.let { day ->
+            val next = de.kewl.cashdy.domain.Periods.next(de.kewl.cashdy.domain.Periods.periodFor(day, st), st).start
+            if (st.potStart == null || st.potStart!!.isBefore(next)) st = st.copy(potStart = next)
+        }
         // Die aktuelle DKB-App hat einen anderen Paketnamen als die alte.
         if (OLD_DKB in st.watchedApps && NEW_DKB !in st.watchedApps) st = st.copy(watchedApps = st.watchedApps + NEW_DKB)
         return if (st == withCats.settings) withCats else withCats.copy(settings = st)
