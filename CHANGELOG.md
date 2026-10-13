@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.2
+
+Einfacher, freundlicher und mit Kontostand zum Start:
+
+- **Ruhigeres Design:** eine Farbe für das Wichtigste, Listen ohne bunte Symbole, Plus-Knopf mittig in der Leiste. Oben auf der Startseite „Noch frei“, darunter die Rechnung (Einnahmen, Fest, Rücklage, Ausgegeben).
+- **Die Münze:** jetzt honiggold mit Riffelkante, auch als App-Symbol. Sie blinzelt, atmet, hüpft nach jedem Eintrag und dreht sich beim Antippen. Wird es knapp, macht sie Mut („Wird eng, aber das kriegen wir hin“), im Minus tröstet sie mit einem Herz („Du schaffst das!“), kleine Erfolge feiert sie mit.
+- **Start mit Kontostand:** Beim Einrichten fragt Cashdy, was gerade auf dem Konto ist, und der erste Monat stimmt sofort, egal an welchem Tag du anfängst. Stimmen die Zahlen später nicht mehr: Mehr › Neu anfangen mit Kontostand.
+- **Monatsstart:** Anfang, Mitte, Ende oder eigenes Datum. „Wenn Gehalt kommt“ entfällt, wer das eingestellt hatte, startet am Gehaltstag.
+- **Rücklage-Topf:** seltene Kosten wie Kfz-Versicherung werden auf die Monate verteilt und aus dem Topf bezahlt. Unter „Fest“ steht, wie viel angespart ist und ob bis zur Rechnung etwas fehlt.
+- **Kredite und Raten:** mit letzter Rate zeigt „Fest“, wie viele Raten noch fehlen und wann du fertig bist. Danach fällt die Rate weg und Cashdy feiert mit.
+- **Fest:** Plus oben rechts, Suche nach Name oder Kategorie mit Summe, Ansicht nach Kategorie (zugeklappt), Name oder nächster Abbuchung. Kategorie als Auswahlliste, neue Vorlage Kfz-Steuer.
+- **Monat:** Einträge nach Kategorie zugeklappt mit Summe oder nach Tag, auch in die Zukunft blättern. Jahresansicht mit Fixkosten im Jahr und was pro Monat frei ist.
+- **Eintragen:** Kategorie als breite Auswahlliste, Schalter „Bar bezahlt“. PayPal als Zahlungsart entfällt.
+- **Kassenbon:** Summe wird zuverlässiger erkannt, die anderen Beträge vom Bon lassen sich antippen. Karte oder bar wird an der Zahlungszeile erkannt.
+- **Hilfe** unter Mehr, mit Schritt-für-Schritt-Anleitung zum Einschalten der Zahlungserkennung. Mehr ist aufgeräumt, Datenschutz-Text ohne Nextcloud.
+
 ## 0.0.1 (Grundversion)
 
 Die erste Version mit allem, was im Konzept steht (außer Bankverbindung):
