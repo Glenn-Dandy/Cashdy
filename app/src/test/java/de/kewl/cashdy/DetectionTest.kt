@@ -86,13 +86,31 @@ class DetectionTest {
 
     private val dkbNew = "com.dkbcodefactory.banking"
 
+    @Test fun reservedThenBookedMergesOnce() {
+        val (d1, r1) = Detection.handle(AppData(), dkbNew, "Umsatz vorgemerkt (*2872)", "-10,99 Euro an freenet DLS GmbH", t0)
+        val (d2, _) = Detection.accept(d1, (r1 as DetectionResult.Pending).detected.id, de.kewl.cashdy.data.DefaultCategories.PHONE)
+        val (d3, r2) = Detection.handle(d2, dkbNew, "Umsatz gebucht (*2872)", "-10,99 Euro an freenet DLS GmbH", t0 + 2 * 86_400_000L)
+        assertTrue(r2 is DetectionResult.Merged)
+        assertEquals(1, d3.entries.size)
+        // Eine zweite Buchung ohne eigene Vormerkung ist eine neue Zahlung.
+        val (_, r3) = Detection.handle(d3, dkbNew, "Umsatz gebucht (*2872)", "-10,99 Euro an freenet DLS GmbH", t0 + 3 * 86_400_000L)
+        assertTrue(r3 is DetectionResult.Pending)
+    }
+
+    @Test fun ignoredReservationAlsoSwallowsBooking() {
+        val (d1, r1) = Detection.handle(AppData(), dkbNew, "Umsatz vorgemerkt (*2872)", "-12,50 Euro an AMAZON PAYMENTS EUROPE S.C.A.", t0)
+        val d2 = Detection.ignore(d1, (r1 as DetectionResult.Pending).detected.id)
+        val (_, r2) = Detection.handle(d2, dkbNew, "Umsatz gebucht (*2872)", "-12,50 Euro an AMAZON PAYMENTS EUROPE S.C.A.", t0 + 86_400_000L)
+        assertTrue(r2 is DetectionResult.Merged)
+    }
+
     @Test fun sameAmountThisMonthIsFlagged() {
         val (d1, r1) = Detection.handle(AppData(), dkbNew, "Umsatz vorgemerkt (*2872)", "-10,99 Euro an freenet DLS GmbH", t0)
         r1 as DetectionResult.Pending
         assertEquals(null, Detection.maybeDuplicate(d1, r1.detected))
         val (d2, _) = Detection.accept(d1, r1.detected.id, de.kewl.cashdy.data.DefaultCategories.PHONE)
-        // Später kommt dieselbe Zahlung als „gebucht“: wartet, aber mit Hinweis.
-        val (d3, r2) = Detection.handle(d2, dkbNew, "Umsatz gebucht (*2872)", "-10,99 Euro an freenet DLS GmbH", t0 + 2 * 86_400_000L)
+        // Gleicher Betrag, aber ein anderer Weg (Lastschrift statt Vormerkung): wartet, mit Hinweis.
+        val (d3, r2) = Detection.handle(d2, dkbNew, "Lastschrift", "-10,99 Euro an freenet DLS GmbH", t0 + 2 * 86_400_000L)
         r2 as DetectionResult.Pending
         val warn = Detection.maybeDuplicate(d3, r2.detected)!!
         assertTrue(warn, warn.contains("10,99") && warn.contains("freenet", ignoreCase = true))
@@ -114,7 +132,7 @@ class DetectionTest {
         val base = AppData(settings = Settings(autoAccept = true, watchedApps = Settings.DEFAULT_WATCHED), merchantRules = mapOf(de.kewl.cashdy.domain.Merchants.normalize("freenet DLS GmbH") to de.kewl.cashdy.data.DefaultCategories.PHONE))
         val (d1, r1) = Detection.handle(base, dkbNew, "Umsatz vorgemerkt (*2872)", "-10,99 Euro an freenet DLS GmbH", t0)
         assertTrue(r1 is DetectionResult.AutoAccepted)
-        val (_, r2) = Detection.handle(d1, dkbNew, "Umsatz gebucht (*2872)", "-10,99 Euro an freenet DLS GmbH", t0 + 86_400_000L)
+        val (_, r2) = Detection.handle(d1, dkbNew, "Lastschrift", "-10,99 Euro an freenet DLS GmbH", t0 + 86_400_000L)
         assertTrue(r2 is DetectionResult.Pending)
     }
 }

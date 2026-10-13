@@ -79,6 +79,12 @@ object Detection {
             return data.copy(detected = listOf(det) + data.detected) to DetectionResult.Merged(det)
         }
 
+        // 1b) Bank meldet erst „vorgemerkt“, Tage später dieselbe Zahlung als „gebucht“.
+        if (isBooked(title) && reservedTwin(data, pkg, parsed.amount, det.merchant, now)) {
+            det = det.copy(status = DetectedStatus.MERGED, mergeNote = BOOKED_NOTE)
+            return data.copy(detected = listOf(det) + data.detected) to DetectionResult.Merged(det)
+        }
+
         // 2) Bank meldet eine PayPal-Abbuchung, die PayPal selbst schon gemeldet hat.
         if (parsed.paypalViaBank) {
             val pp = data.entries.firstOrNull {
@@ -130,6 +136,24 @@ object Detection {
         }
 
         return data.copy(detected = listOf(det) + data.detected) to DetectionResult.Pending(det, suggested)
+    }
+
+    private const val BOOKED_NOTE = "Erst vorgemerkt, jetzt gebucht"
+    private const val BOOKED_WINDOW_MS = 14 * 86_400_000L
+
+    private fun isBooked(title: String) = title.lowercase().contains("gebucht")
+    private fun isReserved(title: String) = title.lowercase().contains("vorgemerkt")
+
+    /**
+     * Gibt es eine „vorgemerkt“-Meldung derselben App mit gleichem Betrag und Empfänger, die
+     * noch keine „gebucht“-Meldung abbekommen hat? Jede Vormerkung passt nur zu einer Buchung.
+     */
+    private fun reservedTwin(d: AppData, pkg: String, amount: Long, merchant: String, now: Long): Boolean {
+        fun same(o: Detected) = o.pkg == pkg && o.amount == amount && now - o.at in 0..BOOKED_WINDOW_MS &&
+            Merchants.normalize(o.merchant) == Merchants.normalize(merchant)
+        val reserved = d.detected.count { same(it) && isReserved(it.title) }
+        val booked = d.detected.count { same(it) && it.mergeNote == BOOKED_NOTE }
+        return reserved > booked
     }
 
     /**
