@@ -49,6 +49,9 @@ import de.kewl.cashdy.data.Entry
 import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.data.PayMethod
 import de.kewl.cashdy.data.PeriodMode
+import de.kewl.cashdy.ui.components.MonthStartPicker
+import de.kewl.cashdy.ui.components.monthStartShort
+import de.kewl.cashdy.ui.components.monthStartText
 import de.kewl.cashdy.data.PriceStep
 import de.kewl.cashdy.data.Recurring
 import de.kewl.cashdy.data.Store
@@ -84,6 +87,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
     var salary by remember { mutableStateOf("") }
     var salaryDay by remember { mutableStateOf(27) }
     var mode by remember { mutableStateOf(PeriodMode.CALENDAR) }
+    var monthDay by remember { mutableStateOf(1) }
     val fixed = remember { mutableStateListOf<QuickFixed>() }
     var cashMode by remember { mutableStateOf(CashMode.WALLET) }
     var wallet by remember { mutableStateOf("") }
@@ -112,14 +116,13 @@ fun OnboardingScreen(onDone: () -> Unit) {
                     firstDue = f.due, endDate = f.end, spread = f.months > 1, prices = listOf(PriceStep(f.due, f.amount)),
                 )
             }
-            val lastSalaryDay = Periods.startInMonth(today, salaryDay, false).let { if (it.isAfter(today)) Periods.startInMonth(today.minusMonths(1), salaryDay, false) else it }
             val entries = Money.parse(wallet)?.takeIf { it > 0 && cashMode == CashMode.WALLET }?.let {
                 listOf(Entry(Store.newId(), it, today, EntryKind.CASH_START, method = PayMethod.CASH, note = "Startbestand"))
             } ?: emptyList()
             val start = Money.parse(balance)?.let { if (minus) -it else it }
             val settings = d.settings.copy(
-                onboarded = true, name = name.trim(), periodMode = mode, periodDay = if (mode == PeriodMode.CALENDAR) 1 else salaryDay,
-                periodStarts = if (mode == PeriodMode.INCOME) listOf(lastSalaryDay) else emptyList(), cashMode = cashMode,
+                onboarded = true, name = name.trim(), periodMode = mode, periodDay = if (mode == PeriodMode.CALENDAR) 1 else monthDay,
+                periodStarts = emptyList(), cashMode = cashMode,
                 startDay = start?.let { today }, startBalance = start,
             )
             // Mit Kontostand fängt die Rücklage erst im ersten vollen Monat an.
@@ -166,18 +169,8 @@ fun OnboardingScreen(onDone: () -> Unit) {
                                 colors = SliderDefaults.colors(thumbColor = c.primary, activeTrackColor = c.primary))
                         }
                         Text("Wann beginnt für dich ein neuer Monat?", style = MaterialTheme.typography.titleMedium, color = c.fg)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Pill("Am 1.", mode == PeriodMode.CALENDAR, { mode = PeriodMode.CALENDAR })
-                            Pill("Immer am $salaryDay.", mode == PeriodMode.FIXED_DAY, { mode = PeriodMode.FIXED_DAY })
-                            Pill("Wenn Gehalt kommt", mode == PeriodMode.INCOME, { mode = PeriodMode.INCOME })
-                        }
-                        Hint(
-                            when (mode) {
-                                PeriodMode.CALENDAR -> "Ganz klassisch: 1. bis Monatsende."
-                                PeriodMode.FIXED_DAY -> "Dein Monat läuft vom $salaryDay. bis zum Tag davor. Fällt der Tag aufs Wochenende, nehme ich den Freitag davor."
-                                PeriodMode.INCOME -> "Dein neuer Monat startet, sobald das Gehalt da ist. Ich frag kurz nach oder erkenne es an der Bank-Meldung."
-                            }
-                        )
+                        MonthStartPicker(mode, monthDay, salaryDay) { m, dd -> mode = m; monthDay = dd }
+                        Hint(monthStartText(mode, monthDay, true))
                         Hint("Kein festes Gehalt? Einfach leer lassen, du kannst Einnahmen auch einzeln eintragen.")
                     }
                     2 -> {
@@ -190,7 +183,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                         SettingSwitch("Konto ist im Minus", "Zum Beispiel im Dispo", minus) { minus = it }
                         Hint(
                             "Damit dein erster Monat gleich stimmt, rechne ich bis " +
-                                when (mode) { PeriodMode.CALENDAR -> "zum Monatsende"; PeriodMode.FIXED_DAY -> "zum nächsten $salaryDay."; PeriodMode.INCOME -> "zum nächsten Gehalt" } +
+                                monthStartShort(mode, monthDay) +
                                 " mit diesem Betrag. " +
                                 "Was bis heute abgebucht wurde oder reinkam, steckt schon darin. Was danach noch kommt, Gehalt oder Fixkosten, " +
                                 "rechne ich dazu oder ab. Darum ist bei den Fixkosten der Abbuchungstag wichtig."
@@ -311,6 +304,7 @@ private val quick = listOf(
     Triple("Spotify", DefaultCategories.SUBS, 1),
     Triple("Rundfunkbeitrag", DefaultCategories.SUBS, 3),
     Triple("Kfz-Versicherung", DefaultCategories.INSURANCE, 12),
+    Triple("Kfz-Steuer", DefaultCategories.CAR, 12),
     Triple("Fitnessstudio", DefaultCategories.FUN, 1),
     Triple("Kredit", DefaultCategories.LOANS, 1),
 )

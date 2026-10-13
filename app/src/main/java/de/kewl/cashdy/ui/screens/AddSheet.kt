@@ -11,8 +11,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.PhotoCamera
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
@@ -69,6 +67,7 @@ import de.kewl.cashdy.ui.components.BigButton
 import de.kewl.cashdy.ui.components.DatePick
 import de.kewl.cashdy.ui.components.Keypad
 import de.kewl.cashdy.ui.components.Pill
+import de.kewl.cashdy.ui.components.CategoryDropdown
 import de.kewl.cashdy.ui.theme.C
 import de.kewl.cashdy.widget.CashdyWidget
 import java.io.File
@@ -94,7 +93,6 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
     // PayPal steht nicht mehr zur Wahl: für die Rechnung zählt nur bar oder nicht bar.
     var method by remember { mutableStateOf(editing?.method ?: req.method ?: lastMethod.takeIf { it == PayMethod.CASH } ?: PayMethod.CARD) }
     var pickDate by remember { mutableStateOf(false) }
-    var catMenu by remember { mutableStateOf(false) }
     var keepReceipt by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -155,19 +153,11 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
 
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))) {
                 if (!cashKind) {
-                    Box {
-                        val cat = cats.firstOrNull { it.id == categoryId }
-                        FieldRow("Kategorie", { catMenu = true }) {
+                    val cat = cats.firstOrNull { it.id == categoryId }
+                    CategoryDropdown(cats, { categoryId = it.id; categoryTouched = true }) { open ->
+                        FieldRow("Kategorie", open) {
                             Text(cat?.let { "${it.emoji} ${it.name}" } ?: "Wählen", style = RowTitle, color = if (cat == null) c.muted else c.fg, modifier = Modifier.weight(1f))
                             Icon(Icons.Rounded.KeyboardArrowDown, null, tint = c.muted)
-                        }
-                        DropdownMenu(catMenu, { catMenu = false }, containerColor = c.surface, modifier = Modifier.heightIn(max = 360.dp)) {
-                            cats.forEach { ct ->
-                                DropdownMenuItem(
-                                    text = { Text("${ct.emoji}  ${ct.name}", style = MaterialTheme.typography.bodyLarge, color = c.fg) },
-                                    onClick = { categoryId = ct.id; categoryTouched = true; catMenu = false },
-                                )
-                            }
                         }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)

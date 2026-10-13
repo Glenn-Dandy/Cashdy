@@ -2,7 +2,7 @@
 
 - Neues, ruhigeres Design: eine Farbe für das Wichtigste, Listen ohne bunte Symbole, Plus-Knopf mittig in der Leiste
 - Startseite: oben „Noch frei“, darunter die Rechnung (Einnahmen, Fest, Rücklage, Ausgegeben)
-- Eintragen: Kategorie als Auswahlliste, Schalter „Bar bezahlt“, PayPal als Zahlungsart entfällt
+- Eintragen: Kategorie als Auswahlliste über die ganze Breite, Schalter „Bar bezahlt“, PayPal als Zahlungsart entfällt
 - Rücklage-Topf: seltene Kosten werden verteilt und beim Fälligwerden aus dem Topf bezahlt. Unter „Fest“ steht, wie viel angespart ist und ob bis zur Rechnung etwas fehlt
 - Jahresansicht: Fixkosten im ganzen Jahr und pro Monat rein, fest und frei, auch für die kommenden Monate
 - Monat lässt sich auch in die Zukunft blättern
@@ -19,4 +19,7 @@
 - Wird es knapp, packt die Münze mit an („Wird eng, aber das kriegen wir hin…“). Im Minus tröstet sie und hält dir ein Herz hin („Das passiert, und es wird wieder… Du schaffst das!“). Kleine Erfolge feiert sie jubelnd: ein sparsamer Tag, mehrere Tage am Stück im Rahmen, ein Monat im Plus nach einem Minus
 - Neu: Mehr › Neu anfangen mit Kontostand, wenn die Zahlen nicht mehr stimmen. Die Rücklage, die schon auf dem Konto liegt, bleibt dabei liegen
 - Datenschutz-Text ohne Nextcloud
-- Behoben: Im Modus „ab Geldeingang“ wurden Monate in der Zukunft falsch berechnet
+- „Wann beginnt dein Monat?“ jetzt mit Anfang, Mitte, Ende oder eigenem Datum, auch beim Einrichten. „Wenn Gehalt kommt“ entfällt, wer das eingestellt hatte, startet am Gehaltstag
+- Fixkosten: Kategorie als Auswahlliste, neue Vorlage Kfz-Steuer
+- Mehr aufgeräumt: Portemonnaie, Kassenbon und Kontoauszug sind dort raus (Bargeld auf der Startseite, Kassenbon beim Eintragen, Kontoauszug unter „Fest“). Erkannte Zahlungen und Neu anfangen stehen bei den Einstellungen
+- Hilfe: was zu tun ist, wenn in den App-Infos oben rechts die drei Punkte fehlen

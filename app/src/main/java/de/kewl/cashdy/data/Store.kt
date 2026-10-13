@@ -82,7 +82,10 @@ object Store {
     private fun migrate(d: AppData): AppData {
         val have = d.categories.map { it.id }.toSet()
         val missing = DefaultCategories.all.filter { it.id !in have }
-        return if (missing.isEmpty()) d else d.copy(categories = d.categories + missing)
+        val withCats = if (missing.isEmpty()) d else d.copy(categories = d.categories + missing)
+        // „Wenn Gehalt kommt“ gibt es nicht mehr: wird zum festen Tag am Gehaltstag.
+        return if (withCats.settings.periodMode != PeriodMode.INCOME) withCats
+        else withCats.copy(settings = withCats.settings.copy(periodMode = PeriodMode.FIXED_DAY, periodStarts = emptyList()))
     }
 
     fun newId(): String = UUID.randomUUID().toString()

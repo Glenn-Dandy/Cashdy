@@ -55,20 +55,6 @@ fun MoreScreen() {
     ) {
         Spacer(Modifier.height(8.dp))
         Text("Mehr", style = MaterialTheme.typography.headlineMedium, color = C.colors.fg)
-        Group {
-            MenuRow("Erkannte Zahlungen", if (pending > 0) "$pending warten auf dich" else "Alles erledigt", badge = pending.takeIf { it > 0 }?.toString()) { ui.go(Route.Inbox()) }
-            if (d.settings.cashMode == CashMode.WALLET) {
-                GroupDivider()
-                MenuRow("Portemonnaie", "Gerade ${Money.format(Budget.wallet(d))}") { ui.go(Route.Wallet) }
-            }
-            GroupDivider()
-            MenuRow("Kassenbon scannen", "Summe und Laden automatisch auslesen") { ui.scanChooser = true }
-            GroupDivider()
-            MenuRow("Kontoauszug importieren", "CSV von DKB, PayPal & Co.") { ui.go(Route.Import()) }
-            GroupDivider()
-            MenuRow("Neu anfangen mit Kontostand", "Wenn die Zahlen nicht mehr stimmen") { restart = true }
-        }
-
         SectionTitle("Einstellungen")
         Group {
             MenuRow("Allgemein", "Monatsstart, Bargeld, Erinnerungen") { ui.go(Route.Settings) }
@@ -78,6 +64,10 @@ fun MoreScreen() {
             MenuRow("Kategorien") { ui.go(Route.Categories) }
             GroupDivider()
             MenuRow("Sicherung", "Als Datei oder auf deinen Server") { ui.go(Route.Backup) }
+            GroupDivider()
+            MenuRow("Erkannte Zahlungen", if (pending > 0) "$pending warten auf dich" else "Alles erledigt", badge = pending.takeIf { it > 0 }?.toString()) { ui.go(Route.Inbox()) }
+            GroupDivider()
+            MenuRow("Neu anfangen mit Kontostand", "Wenn die Zahlen nicht mehr stimmen") { restart = true }
         }
 
         SectionTitle("Hilfe")

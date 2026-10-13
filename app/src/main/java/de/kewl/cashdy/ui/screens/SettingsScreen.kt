@@ -32,6 +32,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import de.kewl.cashdy.data.CashMode
 import de.kewl.cashdy.data.PeriodMode
+import de.kewl.cashdy.ui.components.MonthStartPicker
+import de.kewl.cashdy.ui.components.monthStartText
 import de.kewl.cashdy.data.Settings
 import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.domain.Money
@@ -75,35 +77,10 @@ fun SettingsScreen() {
         SoftField(name, { name = it; setSettings { st -> st.copy(name = it.trim()) } }, "Wie soll ich dich nennen?")
 
         SectionTitle("Wann beginnt dein Monat?")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Pill("Am 1.", s.periodMode == PeriodMode.CALENDAR, { setSettings { it.copy(periodMode = PeriodMode.CALENDAR) } })
-            Pill("Fester Tag", s.periodMode == PeriodMode.FIXED_DAY, { setSettings { it.copy(periodMode = PeriodMode.FIXED_DAY, periodDay = if (it.periodDay == 1) 27 else it.periodDay) } })
-            Pill("Wenn Gehalt kommt", s.periodMode == PeriodMode.INCOME, { setSettings { it.copy(periodMode = PeriodMode.INCOME, periodDay = if (it.periodDay == 1) 27 else it.periodDay) } })
-        }
+        MonthStartPicker(s.periodMode, s.periodDay, 27) { m, day -> setSettings { it.copy(periodMode = m, periodDay = day) } }
+        Hint(monthStartText(s.periodMode, s.periodDay, false))
         if (s.periodMode != PeriodMode.CALENDAR) {
-            Card {
-                Text(
-                    if (s.periodMode == PeriodMode.FIXED_DAY) "Dein Monat beginnt am ${s.periodDay}." else "Gehalt kommt ungefähr am ${s.periodDay}.",
-                    style = MaterialTheme.typography.titleSmall, color = c.fg,
-                )
-                Slider(
-                    value = s.periodDay.toFloat(), onValueChange = { v -> setSettings { it.copy(periodDay = v.toInt()) } },
-                    valueRange = 1f..31f,
-                    colors = SliderDefaults.colors(thumbColor = c.primary, activeTrackColor = c.primary),
-                )
-                if (s.periodMode == PeriodMode.FIXED_DAY) {
-                    SettingSwitch("Wochenende: Werktag davor", "Fällt der Tag auf Samstag oder Sonntag, beginnt der Monat am Freitag.", s.shiftWeekend) { v -> setSettings { it.copy(shiftWeekend = v) } }
-                } else {
-                    Hint("Kommt dein Gehalt, frage ich kurz nach und starte dann deinen neuen Monat. Bis dahin läuft der alte weiter. Erkennt die Bank-App den Eingang, geht das mit einem Tipp in der Benachrichtigung.")
-                    TextButtonSoft("Gehalt ist heute gekommen, neuer Monat", {
-                        Store.update { Salary.startNewPeriod(it, LocalDate.now(), null) }
-                        CashdyWidget.updateAll(ctx)
-                        ui.say("Neuer Monat gestartet")
-                    })
-                    val p = Periods.periodFor(LocalDate.now(), s)
-                    Hint("Aktueller Monat: seit ${p.start.dayOfMonth}.${p.start.monthValue}.")
-                }
-            }
+            SettingSwitch("Wochenende: Werktag davor", "Fällt der Tag auf Samstag oder Sonntag, beginnt der Monat am Freitag.", s.shiftWeekend) { v -> setSettings { it.copy(shiftWeekend = v) } }
         }
 
         SectionTitle("Bargeld")

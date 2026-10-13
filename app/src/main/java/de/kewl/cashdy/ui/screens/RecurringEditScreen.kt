@@ -1,6 +1,13 @@
 package de.kewl.cashdy.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material3.Icon
+import de.kewl.cashdy.ui.components.CategoryDropdown
+import de.kewl.cashdy.ui.components.RowTitle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -146,26 +153,23 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
         if (loan) Hint("Beide Daten stehen in deinem Kreditvertrag. Ungefähr reicht. Dann zeige ich dir, wie viele Raten noch fehlen, und nach der letzten ist die Rate von selbst weg.")
 
         SectionTitle("Kategorie")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            d.categories.filter { it.type == if (income) CategoryType.INCOME else CategoryType.EXPENSE }
-                .filter { it.id != DefaultCategories.CASH_UNKNOWN }
-                .sortedByDescending { it.fixed }
-                .forEach { cat ->
-                    val sel = cat.id == categoryId
-                    Text(
-                        "${cat.emoji} ${cat.name}",
-                        Modifier.clip(RoundedCornerShape(50)).background(if (sel) c.primary else categoryTint(cat, c.dark))
-                            .clickable { categoryId = cat.id }.padding(horizontal = 12.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelLarge, color = if (sel) c.onPrimary else c.fg,
-                    )
-                }
+        val cats = d.categories.filter { it.type == if (income) CategoryType.INCOME else CategoryType.EXPENSE }
+            .filter { it.id != DefaultCategories.CASH_UNKNOWN }
+            .sortedByDescending { it.fixed }
+        val cat = cats.firstOrNull { it.id == categoryId }
+        CategoryDropdown(cats, { categoryId = it.id }, Modifier.fillMaxWidth()) { open ->
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))
+                    .clickable(onClick = open).heightIn(min = 52.dp).padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(cat?.let { "${it.emoji} ${it.name}" } ?: "Kategorie wählen", style = RowTitle, color = if (cat == null) c.muted else c.fg, modifier = Modifier.weight(1f))
+                Icon(Icons.Rounded.KeyboardArrowDown, null, tint = c.muted)
+            }
         }
 
         if (!income && interval > 1) {
             SettingSwitch("Auf die Monate verteilen", "Ich lege jeden Monat ${amountPerMonth(amount, interval)} zurück, damit der Fälligkeitsmonat nicht ins Minus kippt.", spread) { spread = it; spreadTouched = true }
-        }
-        if (income) {
-            SettingSwitch("Das ist mein Gehalt", "Im Modus „ab Geldeingang“ beginnt damit dein neuer Monat.", salary) { salary = it }
         }
 
         if (existing != null) {
@@ -294,6 +298,7 @@ private val templates = listOf(
     Template("Spotify", DefaultCategories.SUBS, 1),
     Template("Rundfunkbeitrag", DefaultCategories.SUBS, 3, 5508),
     Template("Kfz-Versicherung", DefaultCategories.INSURANCE, 12),
+    Template("Kfz-Steuer", DefaultCategories.CAR, 12),
     Template("Haftpflicht", DefaultCategories.INSURANCE, 12),
     Template("Fitnessstudio", DefaultCategories.FUN, 1),
 )

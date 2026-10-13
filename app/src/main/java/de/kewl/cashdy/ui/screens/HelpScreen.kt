@@ -67,9 +67,9 @@ fun HelpScreen() {
                         "Deshalb lässt sich der Schalter beim ersten Mal nicht umlegen, und Play Protect meldet, dass der Zugriff verweigert wurde. So geht es trotzdem:"
                 )
                 Step(1, "Tippe auf „Zugriff öffnen“ und versuch, Cashdy einzuschalten. Die Meldung „Eingeschränkte Einstellung“ einfach schließen.")
-                Step(2, "Tippe auf „App-Infos öffnen“. Oben rechts das Menü mit den drei Punkten öffnen und „Eingeschränkte Einstellungen zulassen“ wählen.")
+                Step(2, "Tippe auf „App-Infos öffnen“. Oben rechts das Menü mit den drei Punkten öffnen und „Eingeschränkte Einstellungen zulassen“ wählen. Siehst du keine drei Punkte? Dann App-Infos ganz schließen, Schritt 1 noch einmal versuchen und App-Infos neu öffnen. Manchmal braucht Android dafür ein paar Anläufe.")
                 Step(3, "Noch einmal „Zugriff öffnen“ und Cashdy einschalten. Jetzt klappt es.")
-                Para("Der Menüpunkt in Schritt 2 erscheint erst, nachdem du Schritt 1 einmal versucht hast. Cashdy liest nur die Apps, die du unter Zahlungserkennung freigibst, und schickt nichts ins Internet.")
+                Para("Der Menüpunkt in Schritt 2 erscheint erst, nachdem du Schritt 1 einmal versucht hast, und nur auf frisch geöffneten App-Infos. Cashdy liest nur die Apps, die du unter Zahlungserkennung freigibst, und schickt nichts ins Internet.")
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButtonSoft("Zugriff öffnen", { openListenerSettings(ctx) })
                     TextButtonSoft("App-Infos öffnen", { openAppInfo(ctx) })
@@ -106,7 +106,7 @@ fun HelpScreen() {
             }
             GroupDivider()
             Topic("Kontoauszug einlesen", open == 5, { open = if (open == 5) -1 else 5 }) {
-                Para("Lade bei DKB oder PayPal die Umsätze als CSV-Datei herunter und öffne sie mit Cashdy (Mehr › Kontoauszug importieren). Ich erkenne doppelte Einträge und schlage dir regelmäßige Zahlungen als Fixkosten vor.")
+                Para("Lade bei DKB oder PayPal die Umsätze als CSV-Datei herunter und öffne sie mit Cashdy (unter „Fest“ auf Plus tippen, dann „Aus Kontoauszug finden“). Ich erkenne doppelte Einträge und schlage dir regelmäßige Zahlungen als Fixkosten vor.")
             }
         }
         Spacer(Modifier.height(40.dp))

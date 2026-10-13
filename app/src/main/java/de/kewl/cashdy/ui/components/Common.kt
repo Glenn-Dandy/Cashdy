@@ -28,6 +28,8 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,7 +41,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -429,6 +438,37 @@ fun Confetti(trigger: Any, modifier: Modifier = Modifier) {
             val px = x * size.width + kotlin.math.sin((progress.value * 8 + i) * 1.3f) * 18f
             rotate(rot + progress.value * 540f, Offset(px, y)) {
                 drawRect(colors[i % colors.size], Offset(px - 6f, y - 3f), Size(12f, 7f))
+            }
+        }
+    }
+}
+
+/**
+ * Kategorie-Auswahl als Klappliste, so breit wie das Feld, an dem sie hängt.
+ * [anchor] bekommt die Funktion zum Aufklappen.
+ */
+@Composable
+fun CategoryDropdown(
+    cats: List<Category>,
+    onPick: (Category) -> Unit,
+    modifier: Modifier = Modifier,
+    anchor: @Composable (open: () -> Unit) -> Unit,
+) {
+    val c = C.colors
+    var open by remember { mutableStateOf(false) }
+    var width by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    Box(modifier.onSizeChanged { width = it.width }) {
+        anchor { open = true }
+        DropdownMenu(
+            open, { open = false }, containerColor = c.surface,
+            modifier = Modifier.width(with(density) { width.toDp() }).heightIn(max = 360.dp),
+        ) {
+            cats.forEach { ct ->
+                DropdownMenuItem(
+                    text = { Text("${ct.emoji}  ${ct.name}", style = MaterialTheme.typography.bodyLarge, color = c.fg) },
+                    onClick = { open = false; onPick(ct) },
+                )
             }
         }
     }
