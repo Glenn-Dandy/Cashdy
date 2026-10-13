@@ -64,4 +64,13 @@ object Reserve {
 
     /** Was gerade im Topf liegt. */
     fun total(d: AppData, today: LocalDate = LocalDate.now()): Cents = all(d, today).sumOf { it.savedNow }
+
+    /**
+     * Was am Ende von [p] im Topf liegt und deshalb auf dem Konto bleiben muss. Rechnungen, die
+     * in [p] schon bezahlt wurden, zählen nicht mehr mit.
+     */
+    fun heldAfter(d: AppData, p: Period): Cents = d.recurring.sumOf { r ->
+        if (!r.spread || r.intervalMonths <= 1 || r.income) 0L
+        else Recurrence.nextDue(r, p.end.plusDays(1))?.let { savedFor(d, r, it, p.start) } ?: 0L
+    }
 }

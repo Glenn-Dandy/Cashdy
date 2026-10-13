@@ -114,7 +114,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
             if (!cashKind) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Segmented(
-                        listOf(EntryKind.EXPENSE to "Ausgabe", EntryKind.INCOME to "Einnahme", EntryKind.REFUND to "Erstattung"),
+                        listOf(EntryKind.EXPENSE to "Ausgabe", EntryKind.INCOME to "Einnahme", EntryKind.REFUND to "Erstattung", EntryKind.SAVING to "Sparen"),
                         kind, Modifier.weight(1f),
                     ) { k ->
                         kind = k
@@ -152,7 +152,14 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
             }
 
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))) {
-                if (!cashKind) {
+                if (kind == EntryKind.SAVING) {
+                    Text(
+                        "Geld aufs Sparkonto gelegt? Das geht von „Noch frei“ ab, zählt aber nicht als ausgegeben.",
+                        Modifier.padding(14.dp), style = MaterialTheme.typography.bodyMedium, color = c.muted,
+                    )
+                    HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
+                }
+                if (!cashKind && kind != EntryKind.SAVING) {
                     val cat = cats.firstOrNull { it.id == categoryId }
                     CategoryDropdown(cats, { categoryId = it.id; categoryTouched = true }) { open ->
                         FieldRow("Kategorie", open) {
@@ -161,11 +168,13 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                         }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
-                    FieldRow(if (kind == EntryKind.INCOME) "Von wem?" else "Wo?") {
+                }
+                if (!cashKind) {
+                    FieldRow(when (kind) { EntryKind.INCOME -> "Von wem?"; EntryKind.SAVING -> "Wohin?"; else -> "Wo?" }) {
                         InlineField(merchant, { t ->
                             merchant = t
                             if (!categoryTouched && kind == EntryKind.EXPENSE) Merchants.suggestCategory(d, t)?.let { categoryId = it }
-                        }, if (kind == EntryKind.INCOME) "z. B. Oma" else "z. B. REWE", Modifier.weight(1f))
+                        }, when (kind) { EntryKind.INCOME -> "z. B. Oma"; EntryKind.SAVING -> "z. B. Tagesgeld"; else -> "z. B. REWE" }, Modifier.weight(1f))
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
                 }
@@ -226,7 +235,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                             "receipts/${f.name}"
                         }.getOrNull() else editing?.receipt
                         val finalCat = when {
-                            cashKind -> null
+                            cashKind || kind == EntryKind.SAVING -> null
                             categoryId != null -> categoryId
                             kind == EntryKind.INCOME -> de.kewl.cashdy.data.DefaultCategories.INCOME_OTHER
                             else -> de.kewl.cashdy.data.DefaultCategories.OTHER
@@ -236,7 +245,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                             amount = if (kind == EntryKind.CASH_ADJUST && (editing?.amount ?: 0) < 0) -cents else cents,
                             date = date, kind = kind, categoryId = finalCat,
                             merchant = merchant.trim(), note = note.trim(),
-                            method = if (kind == EntryKind.INCOME) (editing?.method ?: PayMethod.TRANSFER) else if (cashKind) PayMethod.CASH else method,
+                            method = if (kind == EntryKind.INCOME || kind == EntryKind.SAVING) (editing?.method ?: PayMethod.TRANSFER) else if (cashKind) PayMethod.CASH else method,
                             source = editing?.source ?: if (req.fromScan) Source.OCR else Source.MANUAL,
                             createdAt = editing?.createdAt ?: System.currentTimeMillis(),
                             receipt = receiptPath,
@@ -247,7 +256,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                             learned.copy(entries = list)
                         }
                         CashdyWidget.updateAll(ctx)
-                        ui.say(if (editing != null) "Gespeichert" else "Eingetragen")
+                        ui.say(if (editing != null) "Gespeichert" else if (kind == EntryKind.SAVING) "Gespart! Richtig stark." else "Eingetragen")
                         if (editing == null) MascotEvents.hop()
                         onDismiss()
                     },

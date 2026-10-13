@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.kewl.cashdy.data.Category
+import de.kewl.cashdy.data.Cents
 import de.kewl.cashdy.data.Entry
 import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.data.PayMethod
@@ -357,6 +358,7 @@ fun entryTitle(e: Entry, cat: Category?): String = when (e.kind) {
     EntryKind.CASH_WITHDRAWAL -> "Geld abgehoben"
     EntryKind.CASH_ADJUST -> "Bargeld-Abgleich"
     EntryKind.CASH_START -> "Bargeld-Startbestand"
+    EntryKind.SAVING -> e.merchant.ifBlank { "Gespart" }
     else -> e.merchant.ifBlank { cat?.name ?: "Ausgabe" }
 }
 
@@ -376,6 +378,7 @@ fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> 
             val sub = listOfNotNull(
                 when {
                     e.kind == EntryKind.REFUND -> "Erstattung"
+                    e.kind == EntryKind.SAVING && e.merchant.isNotBlank() -> "Gespart"
                     e.merchant.isNotBlank() && (e.kind == EntryKind.EXPENSE || e.kind == EntryKind.INCOME) -> cat?.name
                     else -> null
                 },
@@ -468,4 +471,14 @@ fun CategoryDropdown(
             }
         }
     }
+}
+
+/**
+ * Was man am Monatsende aufs Sparkonto legen darf, ohne die Rücklage mitzunehmen.
+ * Leer, wenn nichts übrig ist.
+ */
+fun moveText(free: Cents, held: Cents): String? {
+    if (free <= 0) return null
+    return "${Money.format(free)} kannst du aufs Sparkonto legen." +
+        if (held > 0) " ${Money.format(held)} bitte auf dem Konto lassen, das ist deine Rücklage." else ""
 }

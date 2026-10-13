@@ -32,6 +32,8 @@ data class Summary(
     val byCategory: List<CategorySum>,
     /** Nur im Startmonat: Kontostand plus Bargeld am Starttag. Steckt schon in [income]. */
     val startMoney: Cents? = null,
+    /** Aufs Sparkonto gelegt, geht von [free] ab, zählt aber nicht in [spent]. */
+    val saved: Cents = 0,
 )
 
 data class YearPlan(val year: Int, val months: List<Summary>, val fixedTotal: Cents) {
@@ -47,7 +49,7 @@ object Budget {
         EntryKind.CASH_ADJUST -> if (cashMode == CashMode.WALLET) e.amount else 0
         EntryKind.CASH_WITHDRAWAL -> if (cashMode == CashMode.SIMPLE) e.amount else 0
         // Im Einfach-Modus ist Bargeld mit dem Abheben schon "ausgegeben".
-        EntryKind.INCOME, EntryKind.CASH_START -> 0
+        EntryKind.INCOME, EntryKind.CASH_START, EntryKind.SAVING -> 0
     }.let { v ->
         if (cashMode == CashMode.SIMPLE && e.kind == EntryKind.EXPENSE && e.method == PayMethod.CASH) 0 else v
     }
@@ -95,12 +97,13 @@ object Budget {
         val counted = if (startDay == null) entries else entries.filter { !it.date.isBefore(startDay) }
         val oneOffIncome = counted.filter { it.kind == EntryKind.INCOME }.sumOf { it.amount }
         val spent = counted.sumOf { spendingValue(it, s.cashMode) }
+        val saved = counted.filter { it.kind == EntryKind.SAVING }.sumOf { it.amount }
         // Bargeld zählt nur im Portemonnaie-Modus, im Einfach-Modus ist es schon ausgegeben.
         val startMoney = startDay?.let { s.startBalance!! + if (s.cashMode == CashMode.WALLET) walletAtStart(d, it) else 0 }
         val income = (startMoney ?: 0) + incomeItems.sumOf { it.amount } + oneOffIncome
         val fixed = fixedItems.sumOf { it.amount }
         val reserve = reserveItems.sumOf { it.amount }
-        val free = income - fixed - reserve - spent
+        val free = income - fixed - reserve - spent - saved
         val daysLeft = p.daysLeft(today)
         val perDay = if (daysLeft > 0 && free > 0) free / daysLeft else 0
 
@@ -122,7 +125,7 @@ object Budget {
         val byCategory = cat.filter { it.value > 0 }.map { CategorySum(it.key, it.value) }.sortedByDescending { it.amount }
 
         return Summary(p, income, fixed, reserve, spent, free, perDay, daysLeft,
-            incomeItems, fixedItems, reserveItems, entries, potBills, byCategory, startMoney)
+            incomeItems, fixedItems, reserveItems, entries, potBills, byCategory, startMoney, saved)
     }
 
     /**
@@ -156,6 +159,10 @@ object Budget {
     private fun walletAtStart(d: AppData, day: LocalDate): Cents =
         wallet(d.copy(entries = d.entries.filter { it.date.isBefore(day) || (it.date == day && it.kind == EntryKind.CASH_START) }))
 
+    /** Im Kalenderjahr aufs Sparkonto gelegt. */
+    fun savedInYear(d: AppData, year: Int): Cents =
+        d.entries.filter { it.kind == EntryKind.SAVING && it.date.year == year }.sumOf { it.amount }
+
     /** Bargeld laut App. */
     fun wallet(d: AppData): Cents = d.entries.sumOf { e ->
         when (e.kind) {
@@ -163,6 +170,7 @@ object Budget {
             EntryKind.CASH_ADJUST -> -e.amount
             EntryKind.EXPENSE -> if (e.method == PayMethod.CASH) -e.amount else 0
             EntryKind.INCOME, EntryKind.REFUND -> if (e.method == PayMethod.CASH) e.amount else 0
+            EntryKind.SAVING -> 0
         }
     }
 

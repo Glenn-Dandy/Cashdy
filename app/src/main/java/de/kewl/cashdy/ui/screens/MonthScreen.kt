@@ -46,6 +46,8 @@ import de.kewl.cashdy.ui.components.FoldRow
 import de.kewl.cashdy.data.category
 import de.kewl.cashdy.domain.Budget
 import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.domain.Reserve
+import de.kewl.cashdy.ui.components.moveText
 import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.ui.AddRequest
 import de.kewl.cashdy.ui.LocalUi
@@ -131,12 +133,18 @@ fun MonthScreen() {
             }
             GroupDivider()
             ValueRow("Ausgegeben", "− " + Money.format(sum.spent))
+            if (sum.saved > 0) {
+                GroupDivider()
+                ValueRow("Gespart", "− " + Money.format(sum.saved), note = "aufs Sparkonto gelegt", valueColor = c.good)
+            }
             GroupDivider()
             ValueRow(
                 when { future -> "Zum Ausgeben"; sum.free >= 0 -> if (period.end.isBefore(today)) "Übrig geblieben" else "Noch frei"; else -> "Drüber" },
                 Money.format(sum.free), strong = true, valueColor = if (sum.free >= 0) c.fg else c.warn,
             )
         }
+
+        if (period.end.isBefore(today) && sum.entries.isNotEmpty()) moveText(sum.free, Reserve.heldAfter(d, period))?.let { Hint("Zum Monatsende: $it") }
 
         if (sum.entries.isNotEmpty()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -195,18 +203,23 @@ private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableM
     val c = C.colors
     fun key(e: Entry): String = when (e.kind) {
         EntryKind.EXPENSE, EntryKind.REFUND, EntryKind.INCOME -> e.categoryId?.takeIf { d.category(it) != null } ?: NONE
+        EntryKind.SAVING -> SAVED
         else -> CASH
     }
     // Ausgaben positiv, Einnahmen und Erstattungen negativ.
-    fun value(e: Entry): Cents = if (e.kind == EntryKind.INCOME) -e.amount else Budget.spendingValue(e, cashMode)
+    fun value(e: Entry): Cents = when (e.kind) {
+        EntryKind.INCOME -> -e.amount
+        EntryKind.SAVING -> e.amount
+        else -> Budget.spendingValue(e, cashMode)
+    }
     val prevBy = prev.groupBy(::key).mapValues { (_, es) -> es.sumOf(::value) }
     val groups = entries.groupBy(::key).map { (k, es) -> Triple(k, es, es.sumOf(::value)) }
-        .sortedWith(compareBy<Triple<String, List<Entry>, Cents>> { if (it.first == NONE) 3 else if (it.first == CASH) 2 else if (it.third < 0) 1 else 0 }.thenByDescending { kotlin.math.abs(it.third) })
-    val max = groups.maxOf { it.third }.coerceAtLeast(1)
+        .sortedWith(compareBy<Triple<String, List<Entry>, Cents>> { if (it.first == NONE) 4 else if (it.first == CASH) 3 else if (it.first == SAVED) 2 else if (it.third < 0) 1 else 0 }.thenByDescending { kotlin.math.abs(it.third) })
+    val max = groups.filter { it.first != SAVED }.maxOfOrNull { it.third }?.coerceAtLeast(1) ?: 1
     Group {
         groups.forEachIndexed { i, (k, es, v) ->
             if (i > 0) GroupDivider()
-            val name = when (k) { NONE -> "Ohne Kategorie"; CASH -> "Bargeld"; else -> d.category(k)?.name ?: "Ohne Kategorie" }
+            val name = when (k) { NONE -> "Ohne Kategorie"; CASH -> "Bargeld"; SAVED -> "Gespart"; else -> d.category(k)?.name ?: "Ohne Kategorie" }
             val p = prevBy[k] ?: 0
             val note = listOfNotNull(
                 "${es.size} ${if (es.size == 1) "Eintrag" else "Einträge"}",
@@ -225,7 +238,7 @@ private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableM
             val isOpen = open[k] ?: false
             FoldRow(
                 name, if (v < 0) "+" + Money.format(-v) else Money.format(v), isOpen, note = note,
-                valueColor = if (v < 0) c.good else c.fg, bar = if (v > 0) v.toFloat() / max else null,
+                valueColor = if (v < 0 || k == SAVED) c.good else c.fg, bar = if (v > 0 && k != SAVED) v.toFloat() / max else null,
             ) { open[k] = !isOpen }
             AnimatedVisibility(isOpen) {
                 FoldChildren {
@@ -238,6 +251,7 @@ private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableM
 
 private const val NONE = "_none"
 private const val CASH = "_cash"
+private const val SAVED = "_saved"
 
 @Composable
 private fun YearView(onOpen: (Period) -> Unit) {

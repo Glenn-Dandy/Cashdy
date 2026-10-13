@@ -90,6 +90,11 @@ fun HelpScreen() {
                 Para("Hast du erst kurz vor der Rechnung angefangen, reicht der Topf noch nicht. Dann zählt der fehlende Rest im Monat der Rechnung, und unter „Fest“ siehst du vorher, wie viel fehlt.")
             }
             GroupDivider()
+            Topic("Sparen und Tagesgeld", open == 7, { open = if (open == 7) -1 else 7 }) {
+                Para("Legst du Geld aufs Sparkonto, tipp auf Plus und dann auf „Sparen“. Es geht von „Noch frei“ ab, zählt aber nicht als ausgegeben. Auf der Startseite siehst du, wie viel du dieses Jahr schon gespart hast.")
+                Para("Am Monatsende sage ich dir, wie viel du aufs Sparkonto legen kannst. Die Rücklage lässt du dabei auf dem Konto, sonst fehlt sie, wenn die Rechnung kommt.")
+            }
+            GroupDivider()
             Topic("Kredite und Raten", open == 6, { open = if (open == 6) -1 else 6 }) {
                 Para("Trag die Rate als Fixkosten ein und wähl die Kategorie „Kredite & Raten“. Gib dazu die letzte Rate an, sie steht in deinem Vertrag. Ungefähr reicht.")
                 Para("Unter „Fest“ siehst du dann, wie viele Raten noch fehlen und wann du fertig bist. Nach der letzten Rate ist sie von selbst weg, und du hast jeden Monat mehr frei.")

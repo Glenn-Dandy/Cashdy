@@ -264,4 +264,27 @@ class BudgetTest {
         assertEquals(0L, st.missing)
         assertEquals(12, Budget.year(data, 2027, d(2026, 10, 11)).months.map { it.period.start }.distinct().size)
     }
+
+    @Test fun savingLowersFreeButIsNotSpent() {
+        val data = AppData(
+            recurring = listOf(salary, rent),
+            entries = listOf(
+                Entry("e", 2_000, d(2026, 10, 3), EntryKind.EXPENSE, "food"),
+                Entry("s", 5_000, d(2026, 10, 5), EntryKind.SAVING, merchant = "Tagesgeld"),
+            ),
+        )
+        val oct = Budget.summary(data, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 10))
+        assertEquals(2_000L, oct.spent)
+        assertEquals(5_000L, oct.saved)
+        assertEquals(300_000L - 85_000 - 2_000 - 5_000, oct.free)
+        assertEquals(5_000L, Budget.savedInYear(data, 2026))
+    }
+
+    @Test fun potStaysOnAccountAtMonthEnd() {
+        // Kfz 600 € am 15.11., Topf seit Januar: Ende Oktober liegen 10 x 50 € darin.
+        val data = AppData(recurring = listOf(salary, car), settings = Settings(potStart = d(2026, 1, 1)))
+        assertEquals(50_000L, de.kewl.cashdy.domain.Reserve.heldAfter(data, Periods.calendar(d(2026, 10, 1))))
+        // Ende November ist die Rechnung bezahlt, der Topf fängt für 2027 neu an.
+        assertEquals(5_000L, de.kewl.cashdy.domain.Reserve.heldAfter(data, Periods.calendar(d(2026, 12, 1))))
+    }
 }

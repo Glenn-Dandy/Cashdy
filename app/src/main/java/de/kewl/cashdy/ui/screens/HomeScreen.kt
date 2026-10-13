@@ -42,6 +42,7 @@ import de.kewl.cashdy.detect.Detection
 import de.kewl.cashdy.detect.PaymentListenerService
 import de.kewl.cashdy.domain.Budget
 import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.ui.components.moveText
 import de.kewl.cashdy.domain.PotStatus
 import de.kewl.cashdy.domain.Reserve
 import de.kewl.cashdy.domain.Periods
@@ -236,6 +237,24 @@ fun HomeScreen() {
             }
         }
 
+        // Neuer Monat: wie viel vom alten aufs Sparkonto darf, ohne die Rücklage mitzunehmen.
+        val closed = remember(d, period.key) { Periods.previous(period, d.settings) }
+        if (ChronoUnit.DAYS.between(period.start, today) < 7 && "move:${closed.key}" !in d.settings.celebrated) {
+            val closedSum = remember(d, closed.key) { Budget.summary(d, closed, today) }
+            // Nur für Monate, in denen Cashdy schon benutzt wurde.
+            val used = closedSum.entries.isNotEmpty() && d.settings.startDay?.let { !closed.end.isBefore(it) } != false
+            val move = if (used) moveText(closedSum.free, Reserve.heldAfter(d, closed)) else null
+            if (move != null) Group {
+                Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp)) {
+                    Text("${closed.label} abgeschlossen", style = MaterialTheme.typography.titleMedium, color = c.fg)
+                    Text(move, style = MaterialTheme.typography.bodyMedium, color = c.fg)
+                }
+                TextButtonSoft("Alles klar", {
+                    Store.update { it.copy(settings = it.settings.copy(celebrated = it.settings.celebrated + "move:${closed.key}")) }
+                }, Modifier.align(Alignment.End).padding(end = 8.dp, bottom = 4.dp))
+            }
+        }
+
         // Die Rechnung dahinter, in vier Zeilen.
         Group {
             IncomeRows(sum, d.settings.startDay, d.settings.cashMode == CashMode.WALLET, onClick = { ui.go(Route.Fixed) })
@@ -247,6 +266,13 @@ fun HomeScreen() {
             }
             GroupDivider()
             ValueRow("Ausgegeben", "− " + Money.format(sum.spent), onClick = { ui.go(Route.Month) })
+            if (sum.saved > 0) {
+                GroupDivider()
+                ValueRow(
+                    "Gespart", "− " + Money.format(sum.saved), valueColor = c.good,
+                    note = "dieses Jahr schon ${Money.format(Budget.savedInYear(d, today.year))}", onClick = { ui.go(Route.Month) },
+                )
+            }
             GroupDivider()
             ValueRow(if (sum.free >= 0) "Noch frei" else "Drüber", Money.format(sum.free), strong = true, valueColor = if (sum.free >= 0) c.fg else c.warn)
         }

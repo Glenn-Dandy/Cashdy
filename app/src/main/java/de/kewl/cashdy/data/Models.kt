@@ -47,6 +47,8 @@ enum class EntryKind {
     CASH_START,
     /** Rückerstattung, mindert die Ausgaben. */
     REFUND,
+    /** Aufs Sparkonto gelegt. Geht von „Noch frei“ ab, ist aber keine Ausgabe. */
+    SAVING,
 }
 
 @Serializable

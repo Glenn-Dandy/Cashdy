@@ -127,7 +127,8 @@ class ReminderWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
             if (s.remindPeriodEnd && today == p.end && !p.estimatedEnd) {
                 once("end#${p.key}") {
                     val t = if (sum.free >= 0) "Dein ${p.shortLabel}: ${Money.format(sum.free)} übrig 🎉" else "Dein ${p.shortLabel}: ${Money.format(-sum.free)} drüber"
-                    Reminder("end#${p.key}", t, if (sum.free >= 0) "Stark! Schau dir an, wohin das Geld ging." else "Kein Drama. Schau mal, wo es hakt.", "month")
+                    val move = de.kewl.cashdy.ui.components.moveText(sum.free, de.kewl.cashdy.domain.Reserve.heldAfter(d, p))
+                    Reminder("end#${p.key}", t, move ?: if (sum.free >= 0) "Stark! Schau dir an, wohin das Geld ging." else "Kein Drama. Schau mal, wo es hakt.", "month")
                 }
             }
 
