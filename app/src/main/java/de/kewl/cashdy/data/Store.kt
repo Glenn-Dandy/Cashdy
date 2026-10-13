@@ -83,10 +83,16 @@ object Store {
         val have = d.categories.map { it.id }.toSet()
         val missing = DefaultCategories.all.filter { it.id !in have }
         val withCats = if (missing.isEmpty()) d else d.copy(categories = d.categories + missing)
+        var st = withCats.settings
         // „Wenn Gehalt kommt“ gibt es nicht mehr: wird zum festen Tag am Gehaltstag.
-        return if (withCats.settings.periodMode != PeriodMode.INCOME) withCats
-        else withCats.copy(settings = withCats.settings.copy(periodMode = PeriodMode.FIXED_DAY, periodStarts = emptyList()))
+        if (st.periodMode == PeriodMode.INCOME) st = st.copy(periodMode = PeriodMode.FIXED_DAY, periodStarts = emptyList())
+        // Die aktuelle DKB-App hat einen anderen Paketnamen als die alte.
+        if (OLD_DKB in st.watchedApps && NEW_DKB !in st.watchedApps) st = st.copy(watchedApps = st.watchedApps + NEW_DKB)
+        return if (st == withCats.settings) withCats else withCats.copy(settings = st)
     }
+
+    private const val OLD_DKB = "de.dkb.portalapp"
+    private const val NEW_DKB = "com.dkbcodefactory.banking"
 
     fun newId(): String = UUID.randomUUID().toString()
 }

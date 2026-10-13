@@ -7,6 +7,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import de.kewl.cashdy.ui.components.CategoryDropdown
+import de.kewl.cashdy.detect.Detection
+import de.kewl.cashdy.data.DetectedStatus
+import de.kewl.cashdy.domain.Merchants
+import de.kewl.cashdy.notify.Notify
 import de.kewl.cashdy.ui.components.RowTitle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,7 +71,7 @@ import java.time.LocalDate
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
+fun RecurringEditScreen(id: String?, incomeDefault: Boolean, fromDetected: String? = null) {
     val ui = LocalUi.current
     val ctx = LocalContext.current
     val d = Store.current
@@ -75,14 +79,21 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
     val c = C.colors
     val today = LocalDate.now()
 
+    // Aus einer erkannten Zahlung: Name, Betrag und Tag sind schon ausgefüllt.
+    val det = fromDetected?.let { did -> d.detected.firstOrNull { it.id == did } }
     val income = existing?.income ?: incomeDefault
-    var name by remember { mutableStateOf(existing?.name ?: if (income) "Gehalt" else "") }
-    var amount by remember { mutableStateOf(existing?.let { Money.format(Recurrence.currentPrice(it, today)).removeSuffix(" €") } ?: "") }
+    var name by remember { mutableStateOf(existing?.name ?: det?.merchant ?: if (income) "Gehalt" else "") }
+    var amount by remember { mutableStateOf(existing?.let { Money.format(Recurrence.currentPrice(it, today)).removeSuffix(" €") } ?: det?.let { Money.format(it.amount).removeSuffix(" €") } ?: "") }
     var interval by remember { mutableStateOf(existing?.intervalMonths ?: 1) }
     var customInterval by remember { mutableStateOf(if (interval !in listOf(1, 3, 6, 12)) interval.toString() else "") }
-    var firstDue by remember { mutableStateOf(existing?.firstDue ?: today) }
+    var firstDue by remember { mutableStateOf(existing?.firstDue ?: det?.let { Detection.dayOf(it) } ?: today) }
     var endDate by remember { mutableStateOf(existing?.endDate) }
-    var categoryId by remember { mutableStateOf(existing?.categoryId ?: if (income) DefaultCategories.SALARY else null) }
+    var categoryId by remember {
+        mutableStateOf(
+            existing?.categoryId ?: det?.let { dt -> Merchants.suggestCategory(d, dt.merchant)?.takeIf { cid -> d.categories.any { it.id == cid && it.fixed } } }
+                ?: if (income) DefaultCategories.SALARY else null
+        )
+    }
     var spread by remember { mutableStateOf(existing?.spread ?: false) }
     var spreadTouched by remember { mutableStateOf(existing != null) }
     var salary by remember { mutableStateOf(existing?.salary ?: (income && d.recurring.none { it.salary })) }
@@ -99,7 +110,8 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
     ) {
         ScreenHeader(if (existing == null) (if (income) "Neue Einnahme" else "Neue Fixkosten") else name.ifBlank { "Bearbeiten" }, onBack = { ui.back() })
 
-        if (existing == null && !income) {
+        if (det != null) Hint("Aus der erkannten Zahlung über ${det.sourceName}. Doch keine Fixkosten? Mit dem Pfeil oben kommst du zurück, es geht nichts verloren.")
+        if (existing == null && !income && det == null) {
             Hint("Schnell-Vorlagen:")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 templates.forEach { t ->
@@ -216,8 +228,13 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean) {
                 val others = data.recurring.filterNot { it.id == r.id }
                 // Es gibt nur ein Gehalt, das den Monat startet.
                 val cleaned = if (r.salary) others.map { it.copy(salary = false) } else others
-                data.copy(recurring = cleaned + r)
+                // Die erkannte Zahlung ist damit erledigt, sie zählt jetzt als Fixkosten.
+                val dets = if (det == null) data.detected else data.detected.map {
+                    if (it.id == det.id) it.copy(status = DetectedStatus.MERGED, mergeNote = "Als Fixkosten „${r.name}“ angelegt") else it
+                }
+                data.copy(recurring = cleaned + r, detected = dets)
             }
+            if (det != null) Notify.cancel(ctx, det.id)
             CashdyWidget.updateAll(ctx)
             ui.say("Gespeichert")
             ui.back()

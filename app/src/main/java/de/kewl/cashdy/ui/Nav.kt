@@ -16,7 +16,7 @@ sealed interface Route {
     data object Month : Route
     data object Fixed : Route
     data object More : Route
-    data class RecurringEdit(val id: String?, val income: Boolean = false) : Route
+    data class RecurringEdit(val id: String?, val income: Boolean = false, val fromDetected: String? = null) : Route
     data object Wallet : Route
     data class Inbox(val focusId: String? = null) : Route
     data class Import(val uri: Uri? = null) : Route

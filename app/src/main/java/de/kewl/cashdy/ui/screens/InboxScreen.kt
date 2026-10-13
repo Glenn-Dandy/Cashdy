@@ -1,6 +1,7 @@
 package de.kewl.cashdy.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import de.kewl.cashdy.domain.Money
 import de.kewl.cashdy.domain.Salary
 import de.kewl.cashdy.notify.Notify
 import de.kewl.cashdy.ui.LocalUi
+import de.kewl.cashdy.ui.Route
 import de.kewl.cashdy.ui.components.Card
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.Mascot
@@ -130,6 +132,12 @@ private fun DetectedCard(det: Detected, expanded: Boolean) {
             }
             Text(Money.format(det.amount), style = MaterialTheme.typography.titleLarge, color = if (det.kind == DetectedKind.INCOME || det.kind == DetectedKind.REFUND) c.good else c.fg)
         }
+        Detection.maybeDuplicate(d, det)?.let { warn ->
+            Text(
+                "⚠️ $warn", Modifier.padding(top = 8.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.warn.copy(alpha = 0.12f)).padding(10.dp),
+                style = MaterialTheme.typography.bodyMedium, color = c.fg,
+            )
+        }
         if (open) Hint("„${det.title} ${det.text}“".take(200), Modifier.padding(top = 6.dp))
         Spacer(Modifier.height(10.dp))
 
@@ -163,7 +171,16 @@ private fun DetectedCard(det: Detected, expanded: Boolean) {
                 Pill("Einnahme", d.settings.periodMode != PeriodMode.INCOME, { Store.update { Detection.accept(it, det.id, null).first }; done("Als Einnahme eingetragen") })
             }
         }
-        Row(Modifier.padding(top = 6.dp)) {
+        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (det.kind == DetectedKind.EXPENSE || det.kind == DetectedKind.INCOME) {
+                Text(
+                    if (det.kind == DetectedKind.INCOME) "Ist feste Einnahme" else "Ist Fixkosten",
+                    Modifier.clip(RoundedCornerShape(50)).clickable {
+                        ui.go(Route.RecurringEdit(null, income = det.kind == DetectedKind.INCOME, fromDetected = det.id))
+                    }.padding(8.dp),
+                    style = MaterialTheme.typography.labelLarge, color = c.primary,
+                )
+            }
             Spacer(Modifier.weight(1f))
             Text("Nö, ignorieren", Modifier.clip(RoundedCornerShape(50)).clickable {
                 Store.update { Detection.ignore(it, det.id) }; done("Ignoriert")

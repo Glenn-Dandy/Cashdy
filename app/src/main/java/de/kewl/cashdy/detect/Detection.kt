@@ -13,6 +13,9 @@ import de.kewl.cashdy.data.Source
 import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.domain.Merchants
 import de.kewl.cashdy.domain.Recurrence
+import de.kewl.cashdy.domain.Periods
+import de.kewl.cashdy.domain.Money
+import de.kewl.cashdy.data.category
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -117,8 +120,9 @@ object Detection {
             DetectedKind.CASH -> null
         }
 
-        // 4) Automatisch übernehmen, wenn eingeschaltet und Händler gelernt.
+        // 4) Automatisch übernehmen, wenn eingeschaltet und Händler gelernt. Nicht, wenn es doppelt sein könnte.
         if (s.autoAccept && parsed.kind == DetectedKind.EXPENSE && det.merchant.isNotBlank() &&
+            maybeDuplicate(data, det) == null &&
             data.merchantRules.containsKey(Merchants.normalize(det.merchant))
         ) {
             val (d2, entry) = accept(data.copy(detected = listOf(det) + data.detected), det.id, suggested, asCashWithdrawal = false)
@@ -127,6 +131,38 @@ object Detection {
 
         return data.copy(detected = listOf(det) + data.detected) to DetectionResult.Pending(det, suggested)
     }
+
+    /**
+     * Gibt es genau diesen Betrag im selben Monat schon? Eingetragen, als Fixkosten fällig oder
+     * als andere erkannte Zahlung, die noch wartet. Dann ein Hinweis, dass sie doppelt sein
+     * könnte, zum Beispiel weil die Bank erst „vorgemerkt“ und später „gebucht“ meldet.
+     */
+    fun maybeDuplicate(d: AppData, det: Detected): String? {
+        if (det.kind != DetectedKind.EXPENSE && det.kind != DetectedKind.INCOME) return null
+        val day = dayOf(det)
+        val period = Periods.periodFor(day, d.settings)
+        val income = det.kind == DetectedKind.INCOME
+        val amount = Money.format(det.amount)
+        val entry = d.entries.firstOrNull {
+            it.id != det.entryId && it.amount == det.amount && it.date in period &&
+                it.kind == (if (income) EntryKind.INCOME else EntryKind.EXPENSE)
+        }
+        if (entry != null) {
+            val what = entry.merchant.ifBlank { d.category(entry.categoryId)?.name ?: "" }
+            return "Vielleicht doppelt: $amount hast du am ${short(entry.date)} schon eingetragen" + (if (what.isNotBlank()) " ($what)." else ".")
+        }
+        val rec = d.recurring.firstOrNull { r ->
+            r.income == income && Recurrence.dueDates(r, period.start, period.end).any { Recurrence.priceAt(r, it) == det.amount }
+        }
+        if (rec != null) return "Vielleicht doppelt: $amount steht schon bei „Fest“ als „${rec.name}“."
+        val other = d.detected.firstOrNull {
+            it.id != det.id && it.status == DetectedStatus.PENDING && it.amount == det.amount && it.kind == det.kind && dayOf(it) in period
+        }
+        if (other != null) return "Vielleicht doppelt: $amount" + (if (other.merchant.isNotBlank()) " von ${other.merchant}" else "") + " wartet hier schon."
+        return null
+    }
+
+    private fun short(d: LocalDate) = "${d.dayOfMonth}.${d.monthValue}."
 
     private fun closeEnough(expected: Long, actual: Long): Boolean =
         expected > 0 && abs(expected - actual) * 100 <= expected * 20

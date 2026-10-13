@@ -151,7 +151,7 @@ fun CashdyRoot(ui: Ui) {
                         Route.Month -> MonthScreen()
                         Route.Fixed -> FixedScreen()
                         Route.More -> MoreScreen()
-                        is Route.RecurringEdit -> RecurringEditScreen(r.id, r.income)
+                        is Route.RecurringEdit -> RecurringEditScreen(r.id, r.income, r.fromDetected)
                         Route.Wallet -> WalletScreen()
                         is Route.Inbox -> InboxScreen(r.focusId)
                         is Route.Import -> ImportScreen(r.uri)

@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import de.kewl.cashdy.MainActivity
 import de.kewl.cashdy.R
 import de.kewl.cashdy.data.Detected
+import de.kewl.cashdy.detect.Detection
 import de.kewl.cashdy.data.DetectedKind
 import de.kewl.cashdy.data.Entry
 import de.kewl.cashdy.data.PeriodMode
@@ -87,9 +88,12 @@ object Notify {
                 (if (d.settings.periodMode == PeriodMode.INCOME) "Ist das dein Gehalt? Dann starte ich einen neuen Monat." else "Als Einnahme eintragen?")
             DetectedKind.REFUND -> "↩️ $amount zurück$where" to "Als Erstattung eintragen?"
         }
+        val warn = Detection.maybeDuplicate(d, det)
+        val body = if (warn != null) "⚠️ $warn" else text
         val b = base(ctx, CH_DETECTED)
             .setContentTitle(title)
-            .setContentText(text)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(openApp(ctx, "inbox"))
         when (det.kind) {

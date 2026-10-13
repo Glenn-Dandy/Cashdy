@@ -28,7 +28,8 @@ data class SourceApp(val pkg: String, val name: String, val method: PayMethod, v
 object NotificationParser {
 
     val knownApps = listOf(
-        SourceApp("de.dkb.portalapp", "DKB", PayMethod.CARD, bank = true),
+        SourceApp("com.dkbcodefactory.banking", "DKB", PayMethod.CARD, bank = true),
+        SourceApp("de.dkb.portalapp", "DKB (alte App)", PayMethod.CARD, bank = true),
         SourceApp("com.paypal.android.p2pmobile", "PayPal", PayMethod.PAYPAL, bank = false),
         SourceApp("com.google.android.apps.walletnfcrel", "Google Wallet", PayMethod.CARD, bank = false),
         SourceApp("com.starfinanz.smob.android.sfinanzstatus", "Sparkasse", PayMethod.CARD, bank = true),

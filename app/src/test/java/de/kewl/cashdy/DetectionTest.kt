@@ -83,4 +83,38 @@ class DetectionTest {
         assertEquals(1, d1.recorded.size)
         assertTrue(d1.detected.isEmpty())
     }
+
+    private val dkbNew = "com.dkbcodefactory.banking"
+
+    @Test fun sameAmountThisMonthIsFlagged() {
+        val (d1, r1) = Detection.handle(AppData(), dkbNew, "Umsatz vorgemerkt (*2872)", "-10,99 Euro an freenet DLS GmbH", t0)
+        r1 as DetectionResult.Pending
+        assertEquals(null, Detection.maybeDuplicate(d1, r1.detected))
+        val (d2, _) = Detection.accept(d1, r1.detected.id, de.kewl.cashdy.data.DefaultCategories.PHONE)
+        // Später kommt dieselbe Zahlung als „gebucht“: wartet, aber mit Hinweis.
+        val (d3, r2) = Detection.handle(d2, dkbNew, "Umsatz gebucht (*2872)", "-10,99 Euro an freenet DLS GmbH", t0 + 2 * 86_400_000L)
+        r2 as DetectionResult.Pending
+        val warn = Detection.maybeDuplicate(d3, r2.detected)!!
+        assertTrue(warn, warn.contains("10,99") && warn.contains("freenet", ignoreCase = true))
+        // Der schon übernommene Eintrag warnt nicht vor sich selbst.
+        val accepted = d3.detected.first { it.id == r1.detected.id }
+        assertEquals(null, Detection.maybeDuplicate(d3.copy(detected = d3.detected - d3.detected.first { it.id == r2.detected.id }), accepted))
+    }
+
+    @Test fun sameAmountAsFixedCostIsFlagged() {
+        val day = Detection.dayOf(de.kewl.cashdy.data.Detected("x", dkbNew, "DKB", "", "", 0, "", de.kewl.cashdy.data.DetectedKind.EXPENSE, de.kewl.cashdy.data.PayMethod.CARD, t0))
+        val handy = Recurring("h", "Handy", firstDue = day.withDayOfMonth(1).minusMonths(2), prices = listOf(PriceStep(day.withDayOfMonth(1).minusMonths(2), 1099)))
+        val (d1, r) = Detection.handle(AppData(recurring = listOf(handy)), dkbNew, "Umsatz vorgemerkt (*2872)", "-10,99 Euro an freenet DLS GmbH", t0)
+        r as DetectionResult.Pending
+        val warn = Detection.maybeDuplicate(d1, r.detected)!!
+        assertTrue(warn, warn.contains("Handy"))
+    }
+
+    @Test fun suspectedDuplicateIsNotAutoAccepted() {
+        val base = AppData(settings = Settings(autoAccept = true, watchedApps = Settings.DEFAULT_WATCHED), merchantRules = mapOf(de.kewl.cashdy.domain.Merchants.normalize("freenet DLS GmbH") to de.kewl.cashdy.data.DefaultCategories.PHONE))
+        val (d1, r1) = Detection.handle(base, dkbNew, "Umsatz vorgemerkt (*2872)", "-10,99 Euro an freenet DLS GmbH", t0)
+        assertTrue(r1 is DetectionResult.AutoAccepted)
+        val (_, r2) = Detection.handle(d1, dkbNew, "Umsatz gebucht (*2872)", "-10,99 Euro an freenet DLS GmbH", t0 + 86_400_000L)
+        assertTrue(r2 is DetectionResult.Pending)
+    }
 }

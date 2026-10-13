@@ -186,6 +186,7 @@ data class Settings(
 ) {
     companion object {
         val DEFAULT_WATCHED = setOf(
+            "com.dkbcodefactory.banking",
             "de.dkb.portalapp",
             "com.paypal.android.p2pmobile",
             "com.google.android.apps.walletnfcrel",

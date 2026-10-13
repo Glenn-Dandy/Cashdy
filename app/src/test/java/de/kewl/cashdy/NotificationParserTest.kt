@@ -101,4 +101,29 @@ class NotificationParserTest {
         assertNotNull(NotificationParser.findAmount("-12,49 €"))
         assertNull(NotificationParser.findAmount("Bestellung 12345 versandt"))
     }
+
+    // Echte Meldungen der aktuellen DKB-App (Rekorder, 13.10.2026).
+    private val dkbNew = "com.dkbcodefactory.banking"
+
+    @Test fun dkbNewReserved() {
+        val p = NotificationParser.parse(dkbNew, "Umsatz vorgemerkt (*2872)", "-12,50 Euro an AMAZON PAYMENTS EUROPE S.C.A.")!!
+        assertEquals(DetectedKind.EXPENSE, p.kind)
+        assertEquals(1250L, p.amount)
+        assertTrue(p.merchant.lowercase().startsWith("amazon"))
+        assertEquals("DKB", NotificationParser.app(dkbNew)!!.name)
+    }
+
+    @Test fun dkbNewReservedFreenet() {
+        val p = NotificationParser.parse(dkbNew, "Umsatz vorgemerkt (*2872)", "-10,99 Euro an freenet DLS GmbH")!!
+        assertEquals(DetectedKind.EXPENSE, p.kind)
+        assertEquals(1099L, p.amount)
+        assertTrue(p.merchant.lowercase().startsWith("freenet"))
+    }
+
+    @Test fun dkbNewBookedPaypal() {
+        val p = NotificationParser.parse(dkbNew, "Umsatz gebucht (*2872)", "-7,22 Euro an PayPal Europe S.a.r.l. et Cie S.C.A")!!
+        assertEquals(DetectedKind.EXPENSE, p.kind)
+        assertEquals(722L, p.amount)
+        assertTrue(p.paypalViaBank)
+    }
 }
