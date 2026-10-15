@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.4
+
+Vorgemerkte Zahlungen und bessere DKB-Erkennung:
+
+- **Vorgemerkt:** Ausgaben mit einem Datum in der Zukunft, zum Beispiel eine Bestellung, die erst am 30.12. abgebucht wird, stehen auf der Startseite unter „Vorgemerkt“. Sie gehen schon vorher von „Noch frei“ ab, aber nur in dem Monat, in dem sie fällig sind. Bei „Ausgegeben“ steht „davon … vorgemerkt“, beim Eintragen ein Hinweis, in welchem Monat es zählt.
+- **DKB „Zahlung erfolgreich“:** Der Laden wird jetzt richtig erkannt, zum Beispiel „Sonderpreis Baumarkt“, statt „Zahlung erfolgreich“. Melden DKB und Google Wallet dieselbe Zahlung, gewinnt der Ladenname aus Google Wallet oder PayPal.
+- **Baumärkte** landen von selbst bei Haushalt & Drogerie.
+
 ## 0.0.3
 
 Statistik, Sparen und eine Münze, die genauer hinschaut:
