@@ -346,10 +346,12 @@ fun shortDate(d: LocalDate): String = d.format(shortFmt)
 
 private val weekdayFmt = DateTimeFormatter.ofPattern("EEE", Locale.GERMAN)
 
-/** "heute", "gestern", "Do" oder "3.10." für Zeilen in Listen. */
+/** "heute", "gestern", "morgen", "Do", "am 30.12." oder "3.10." für Zeilen in Listen. */
 fun shortDay(d: LocalDate, today: LocalDate = LocalDate.now()): String = when {
     d == today -> "heute"
     d == today.minusDays(1) -> "gestern"
+    d == today.plusDays(1) -> "morgen"
+    d.isAfter(today) -> "am " + d.format(DateTimeFormatter.ofPattern("d.M."))
     d.isAfter(today.minusDays(7)) -> d.format(weekdayFmt).trimEnd('.')
     else -> d.format(DateTimeFormatter.ofPattern("d.M."))
 }

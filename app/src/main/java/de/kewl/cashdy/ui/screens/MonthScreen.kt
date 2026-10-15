@@ -132,7 +132,7 @@ fun MonthScreen(start: LocalDate? = null, openCategory: String? = null) {
                 ValueRow("Rücklage", "− " + Money.format(sum.reserve))
             }
             GroupDivider()
-            ValueRow("Ausgegeben", "− " + Money.format(sum.spent))
+            ValueRow("Ausgegeben", "− " + Money.format(sum.spent), note = if (sum.planned > 0) "davon ${Money.format(sum.planned)} vorgemerkt" else null)
             if (sum.saved > 0) {
                 GroupDivider()
                 ValueRow("Gespart", "− " + Money.format(sum.saved), note = "aufs Sparkonto gelegt", valueColor = c.good)

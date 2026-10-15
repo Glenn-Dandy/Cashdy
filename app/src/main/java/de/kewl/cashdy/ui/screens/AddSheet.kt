@@ -60,11 +60,13 @@ import de.kewl.cashdy.data.PayMethod
 import de.kewl.cashdy.data.Source
 import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.domain.Merchants
+import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.ui.AddRequest
 import de.kewl.cashdy.ui.LocalUi
 import de.kewl.cashdy.ui.components.AmountInput
 import de.kewl.cashdy.ui.components.BigButton
 import de.kewl.cashdy.ui.components.DatePick
+import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.Keypad
 import de.kewl.cashdy.ui.components.Pill
 import de.kewl.cashdy.ui.components.CategoryDropdown
@@ -72,6 +74,7 @@ import de.kewl.cashdy.ui.theme.C
 import de.kewl.cashdy.widget.CashdyWidget
 import java.io.File
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -198,6 +201,15 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
                     FieldRow("Notiz") { InlineField(note, { note = it }, "optional", Modifier.weight(1f)) }
                 }
+            }
+            val today = LocalDate.now()
+            if (date.isAfter(today)) {
+                val target = Periods.periodFor(date, d.settings)
+                val day = date.format(DateTimeFormatter.ofPattern("d.M."))
+                Hint(
+                    if (today in target) "Vorgemerkt für den $day, zählt schon jetzt bei „Noch frei“ mit."
+                    else "Vorgemerkt für den $day, zählt erst im ${if (target.start.year == today.year) target.shortLabel else target.label}."
+                )
             }
             if (req.fromScan && req.receiptUri != null) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { keepReceipt = !keepReceipt }) {

@@ -34,6 +34,8 @@ data class Summary(
     val startMoney: Cents? = null,
     /** Aufs Sparkonto gelegt, geht von [free] ab, zählt aber nicht in [spent]. */
     val saved: Cents = 0,
+    /** Vorgemerkt: Ausgaben mit Datum nach heute. Stecken schon in [spent]. */
+    val planned: Cents = 0,
 )
 
 data class YearPlan(val year: Int, val months: List<Summary>, val fixedTotal: Cents) {
@@ -98,6 +100,7 @@ object Budget {
         val oneOffIncome = counted.filter { it.kind == EntryKind.INCOME }.sumOf { it.amount }
         val spent = counted.sumOf { spendingValue(it, s.cashMode) }
         val saved = counted.filter { it.kind == EntryKind.SAVING }.sumOf { it.amount }
+        val planned = counted.filter { it.date.isAfter(today) }.sumOf { spendingValue(it, s.cashMode) }.coerceAtLeast(0)
         // Bargeld zählt nur im Portemonnaie-Modus, im Einfach-Modus ist es schon ausgegeben.
         val startMoney = startDay?.let { s.startBalance!! + if (s.cashMode == CashMode.WALLET) walletAtStart(d, it) else 0 }
         val income = (startMoney ?: 0) + incomeItems.sumOf { it.amount } + oneOffIncome
@@ -125,7 +128,7 @@ object Budget {
         val byCategory = cat.filter { it.value > 0 }.map { CategorySum(it.key, it.value) }.sortedByDescending { it.amount }
 
         return Summary(p, income, fixed, reserve, spent, free, perDay, daysLeft,
-            incomeItems, fixedItems, reserveItems, entries, potBills, byCategory, startMoney, saved)
+            incomeItems, fixedItems, reserveItems, entries, potBills, byCategory, startMoney, saved, planned)
     }
 
     /**

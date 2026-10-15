@@ -287,4 +287,26 @@ class BudgetTest {
         // Ende November ist die Rechnung bezahlt, der Topf fängt für 2027 neu an.
         assertEquals(5_000L, de.kewl.cashdy.domain.Reserve.heldAfter(data, Periods.calendar(d(2026, 12, 1))))
     }
+
+    @Test fun plannedEntriesCountOnlyInTheirOwnMonth() {
+        val data = AppData(
+            recurring = listOf(salary),
+            entries = listOf(
+                Entry("e1", 2_000, d(2026, 10, 10), EntryKind.EXPENSE, "food", "REWE"),
+                Entry("e2", 4_000, d(2026, 10, 30), EntryKind.EXPENSE, "shop", "lidl.de"),
+                Entry("e3", 4_000, d(2026, 12, 30), EntryKind.EXPENSE, "shop", "lidl.de"),
+            ),
+        )
+        val today = d(2026, 10, 15)
+        val oct = Budget.summary(data, Periods.calendar(today), today)
+        // Der 30.10. geht schon jetzt von „Noch frei“ ab, der 30.12. noch nicht.
+        assertEquals(6_000L, oct.spent)
+        assertEquals(4_000L, oct.planned)
+        assertEquals(300_000L - 6_000, oct.free)
+        val dec = Budget.summary(data, Periods.calendar(d(2026, 12, 1)), today)
+        assertEquals(4_000L, dec.spent)
+        assertEquals(4_000L, dec.planned)
+        // Am Tag selbst ist es ein ganz normaler Eintrag.
+        assertEquals(0L, Budget.summary(data, Periods.calendar(today), d(2026, 10, 30)).planned)
+    }
 }

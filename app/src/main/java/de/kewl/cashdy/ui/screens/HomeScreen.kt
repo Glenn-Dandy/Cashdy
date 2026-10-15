@@ -265,7 +265,11 @@ fun HomeScreen() {
                 ValueRow("Rücklage", "− " + Money.format(sum.reserve), note = "für Jahres- und Quartalskosten", onClick = { ui.go(Route.Fixed) })
             }
             GroupDivider()
-            ValueRow("Ausgegeben", "− " + Money.format(sum.spent), onClick = { ui.go(Route.MonthDetail()) })
+            ValueRow(
+                "Ausgegeben", "− " + Money.format(sum.spent),
+                note = if (sum.planned > 0) "davon ${Money.format(sum.planned)} vorgemerkt" else null,
+                onClick = { ui.go(Route.MonthDetail()) },
+            )
             if (sum.saved > 0) {
                 GroupDivider()
                 ValueRow(
@@ -297,10 +301,18 @@ fun HomeScreen() {
         }
 
         val todays = sum.entries.filter { it.date == today }
-        val recent = if (todays.isNotEmpty()) todays.take(6) else d.entries.sortedByDescending { it.createdAt }.take(3)
+        val recent = if (todays.isNotEmpty()) todays.take(6)
+            else d.entries.filter { !it.date.isAfter(today) }.sortedByDescending { it.createdAt }.take(3)
         if (recent.isNotEmpty()) {
             SectionTitle(if (todays.isNotEmpty()) "Heute" else "Zuletzt")
             EntryGroup(recent, { d.category(it) }, showDay = todays.isEmpty()) { e -> ui.openAdd(AddRequest(editId = e.id)) }
+        }
+
+        // Einträge mit Datum in der Zukunft, zum Beispiel eine Bestellung, die erst später abgebucht wird.
+        val planned = d.entries.filter { it.date.isAfter(today) }.sortedWith(compareBy({ it.date }, { it.createdAt }))
+        if (planned.isNotEmpty()) {
+            SectionTitle("Vorgemerkt")
+            EntryGroup(planned, { d.category(it) }, showDay = true) { e -> ui.openAdd(AddRequest(editId = e.id)) }
         }
 
         val upcoming = remember(d, today) {
