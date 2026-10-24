@@ -38,8 +38,8 @@ android {
         applicationId = "de.kewl.cashdy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5                         // manuell, steigt je Release
-        versionName = "1.0.0"                   // manuell
+        versionCode = 6                         // manuell, steigt je Release
+        versionName = "1.0.1"                   // manuell
         resValue("string", "app_name", "Cashdy")
         buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
         // Die Texterkennung (ML Kit) bringt je Prozessorart eine 11-MB-Bibliothek mit.
