@@ -61,6 +61,7 @@ import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.ocr.ReceiptScanner
 import de.kewl.cashdy.ui.components.Confetti
 import de.kewl.cashdy.ui.screens.AboutScreen
+import de.kewl.cashdy.ui.screens.BankCheckScreen
 import de.kewl.cashdy.ui.screens.HelpScreen
 import de.kewl.cashdy.ui.screens.AddSheet
 import de.kewl.cashdy.ui.screens.BackupScreen
@@ -157,6 +158,7 @@ fun CashdyRoot(ui: Ui) {
                         Route.More -> MoreScreen()
                         is Route.RecurringEdit -> RecurringEditScreen(r.id, r.income, r.fromDetected)
                         Route.Wallet -> WalletScreen()
+                        Route.BankCheck -> BankCheckScreen()
                         is Route.Inbox -> InboxScreen(r.focusId)
                         is Route.Import -> ImportScreen(r.uri)
                         Route.Settings -> SettingsScreen()

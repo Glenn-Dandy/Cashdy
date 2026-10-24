@@ -13,8 +13,6 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import de.kewl.cashdy.domain.Money
@@ -187,14 +185,13 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                 }
                 if (kind == EntryKind.EXPENSE || kind == EntryKind.REFUND) {
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
-                    // Eine erkannte PayPal-Zahlung bleibt PayPal, wenn der Schalter wieder ausgeht.
+                    // Eine erkannte PayPal-Zahlung bleibt PayPal, wenn wieder „Konto“ gewählt wird.
                     val notCash = editing?.method?.takeIf { it != PayMethod.CASH } ?: PayMethod.CARD
-                    FieldRow("Bar bezahlt", { method = if (method == PayMethod.CASH) notCash else PayMethod.CASH }) {
-                        Spacer(Modifier.weight(1f))
-                        Switch(
-                            method == PayMethod.CASH, { method = if (it) PayMethod.CASH else notCash },
-                            colors = SwitchDefaults.colors(checkedTrackColor = c.primary, uncheckedTrackColor = c.line, uncheckedThumbColor = c.muted, uncheckedBorderColor = c.line),
-                        )
+                    FieldRow("Bezahlt") {
+                        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Pill("Konto / Karte", method != PayMethod.CASH, { method = notCash })
+                            Pill("🪙 Bar", method == PayMethod.CASH, { method = PayMethod.CASH })
+                        }
                     }
                 }
                 if (!cashKind) {

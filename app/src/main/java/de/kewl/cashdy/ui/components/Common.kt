@@ -384,7 +384,7 @@ fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> 
                     e.merchant.isNotBlank() && (e.kind == EntryKind.EXPENSE || e.kind == EntryKind.INCOME) -> cat?.name
                     else -> null
                 },
-                if (e.method == PayMethod.CASH && e.kind == EntryKind.EXPENSE) "bar" else null,
+                if (e.method == PayMethod.CASH && e.kind == EntryKind.EXPENSE) "🪙 bar" else null,
                 if (showDay) shortDay(e.date) else null,
                 e.note.ifBlank { null },
             ).joinToString(" · ")

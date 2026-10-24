@@ -31,6 +31,7 @@ import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.data.PayMethod
 import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.data.category
+import de.kewl.cashdy.domain.AccountCheck
 import de.kewl.cashdy.domain.Budget
 import de.kewl.cashdy.domain.Money
 import de.kewl.cashdy.ui.AddRequest
@@ -89,6 +90,47 @@ fun WalletScreen() {
         Spacer(Modifier.height(40.dp))
     }
 
+    // Mehr Bargeld als gedacht und ein Bar-Eintrag mit genau dem Betrag: War der vielleicht gar nicht bar?
+    var notCash by remember { mutableStateOf<Pair<Entry, Long>?>(null) }
+    notCash?.let { (entry, actual) ->
+        fun adjust() {
+            val diff = Budget.wallet(Store.current) - actual
+            if (diff != 0L) Store.update {
+                it.copy(entries = it.entries + Entry(
+                    id = Store.newId(), amount = diff, date = LocalDate.now(), kind = EntryKind.CASH_ADJUST,
+                    categoryId = DefaultCategories.CASH_UNKNOWN, method = PayMethod.CASH,
+                    note = if (diff > 0) "nicht eingetragene Barausgaben" else "mehr Bargeld als gedacht",
+                ))
+            }
+            CashdyWidget.updateAll(ctx)
+        }
+        AlertDialog(
+            onDismissRequest = { notCash = null },
+            title = { Text("${Money.format(entry.amount)} mehr als gedacht") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Steckt vielleicht dieser Eintrag dahinter? Er steht auf bar, ging aber vielleicht vom Konto.")
+                    EntryRow(entry, d.category(entry.categoryId), showDay = true) {}
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    Store.update { data -> data.copy(entries = data.entries.map { if (it.id == entry.id) it.copy(method = PayMethod.CARD) else it }) }
+                    adjust()
+                    ui.say("Geändert, jetzt passt dein Bargeld")
+                    notCash = null
+                }) { Text("War nicht bar") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    adjust()
+                    ui.say("${Money.format(entry.amount)} mehr, schön!")
+                    notCash = null
+                }) { Text("Nein, abgleichen") }
+            },
+        )
+    }
+
     if (check) {
         var real by remember { mutableStateOf("") }
         AlertDialog(
@@ -104,6 +146,12 @@ fun WalletScreen() {
                 TextButton(onClick = {
                     val actual = Money.parse(real.ifBlank { "0" }) ?: return@TextButton
                     val diff = wallet - actual
+                    val candidate = if (diff < 0) AccountCheck.notCash(d, -diff) else null
+                    if (candidate != null) {
+                        notCash = candidate to actual
+                        check = false
+                        return@TextButton
+                    }
                     if (diff != 0L) {
                         Store.update {
                             it.copy(entries = it.entries + Entry(

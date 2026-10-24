@@ -19,6 +19,10 @@ object LocalDateSerializer : KSerializer<LocalDate> {
 
 typealias Day = @Serializable(with = LocalDateSerializer::class) LocalDate
 
+/** Am [date] um [at] (Millisekunden) stand [balance] auf dem Konto. */
+@Serializable
+data class BankCheck(val date: Day, val balance: Cents, val at: Long)
+
 @Serializable
 enum class CategoryType { EXPENSE, INCOME }
 
@@ -182,6 +186,8 @@ data class Settings(
      */
     val startDay: Day? = null,
     val startBalance: Cents? = null,
+    /** Letzte Kontostand-Prüfung, ab hier rechnet die nächste Prüfung. Neu anfangen löscht sie. */
+    val bankCheck: BankCheck? = null,
     /** Zuletzt gewählte Ansichten, damit sie beim nächsten Öffnen wieder so sind. */
     val fixedView: FixedView = FixedView.CATEGORY,
     /** Statistik: true = ganzes Jahr, false = die letzten 6 Monate. */

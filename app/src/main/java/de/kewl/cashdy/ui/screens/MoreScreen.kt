@@ -67,6 +67,8 @@ fun MoreScreen() {
             GroupDivider()
             MenuRow("Erkannte Zahlungen", if (pending > 0) "$pending warten auf dich" else "Alles erledigt", badge = pending.takeIf { it > 0 }?.toString()) { ui.go(Route.Inbox()) }
             GroupDivider()
+            MenuRow("Kontostand prüfen", "Stimmt Cashdy mit deinem Konto überein?") { ui.go(Route.BankCheck) }
+            GroupDivider()
             MenuRow("Neu anfangen mit Kontostand", "Wenn die Zahlen nicht mehr stimmen") { restart = true }
         }
 
@@ -116,7 +118,7 @@ private fun RestartDialog(onDone: () -> Unit) {
             TextButton(onClick = {
                 val v = Money.parse(balance) ?: return@TextButton
                 // Der Topf fängt im nächsten Monat leer neu an, bis dahin zählt jede Rechnung voll.
-                Store.update { it.copy(settings = it.settings.copy(startDay = today, startBalance = if (minus) -v else v, potStart = end)) }
+                Store.update { it.copy(settings = it.settings.copy(startDay = today, startBalance = if (minus) -v else v, potStart = end, bankCheck = null)) }
                 onDone()
             }, enabled = Money.parse(balance) != null) { Text("Neu anfangen") }
         },

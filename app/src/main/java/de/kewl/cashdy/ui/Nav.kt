@@ -22,6 +22,8 @@ sealed interface Route {
     data object More : Route
     data class RecurringEdit(val id: String?, val income: Boolean = false, val fromDetected: String? = null) : Route
     data object Wallet : Route
+    /** Echten Kontostand eintippen und mit Cashdy vergleichen. */
+    data object BankCheck : Route
     data class Inbox(val focusId: String? = null) : Route
     data class Import(val uri: Uri? = null) : Route
     data object Settings : Route
