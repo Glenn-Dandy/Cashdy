@@ -44,6 +44,7 @@ import de.kewl.cashdy.ui.components.Mascot
 import de.kewl.cashdy.ui.components.MoneyField
 import de.kewl.cashdy.ui.components.Mood
 import de.kewl.cashdy.ui.components.ScreenHeader
+import de.kewl.cashdy.ui.components.SectionTitle
 import de.kewl.cashdy.ui.components.SettingSwitch
 import de.kewl.cashdy.ui.components.ValueRow
 import de.kewl.cashdy.ui.theme.C
@@ -63,6 +64,7 @@ fun BankCheckScreen() {
     val today = LocalDate.now()
     var text by remember { mutableStateOf("") }
     var minus by remember { mutableStateOf(false) }
+    var restart by remember { mutableStateOf(false) }
     val real = Money.parse(text)?.let { if (minus) -it else it }
     val anchor = AccountCheck.anchor(d)
     val expected = AccountCheck.expected(d, today)
@@ -119,8 +121,21 @@ fun BankCheckScreen() {
                 Result(diff, expected, onRemember = { saveCheck(real) })
             }
         }
+
+        // Getrennt vom Prüfen: Wer gar nicht mehr durchblickt, fängt mit dem echten Kontostand neu an.
+        Spacer(Modifier.height(24.dp))
+        SectionTitle("Neu anfangen")
+        Card {
+            Text(
+                "Passt gar nichts mehr, zum Beispiel weil du ein paar Wochen nichts eingetragen hast? Dann fang mit deinem echten Kontostand neu an. Es wird nichts gelöscht.",
+                style = MaterialTheme.typography.bodyMedium, color = c.fg,
+            )
+            Spacer(Modifier.height(12.dp))
+            BigButton("Neu anfangen mit Kontostand", { restart = true }, Modifier.fillMaxWidth(), color = c.soft2, textColor = c.fg)
+        }
         Spacer(Modifier.height(40.dp))
     }
+    if (restart) RestartDialog { restart = false }
 }
 
 @Composable

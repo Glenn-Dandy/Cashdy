@@ -1,0 +1,9 @@
+Cashdy 1.0.0: Die erste große Version. Cashdy zeigt dir jeden Tag, wie viel Geld diesen Monat noch frei ist. Kostenlos, ohne Werbung, ohne Bank-Login, deine Daten bleiben auf dem Handy.
+
+Neu seit 0.0.4:
+
+- **Kontostand prüfen** (Mehr): Tipp ein, was deine Banking-App zeigt. Cashdy sagt, ob es passt. Wenn nicht, sucht es den Eintrag, der genau die Differenz erklärt, zum Beispiel eine Zahlung, die auf bar steht, aber vom Konto ging. Sonst kannst du die Differenz nachtragen oder ausgleichen. „Neu anfangen mit Kontostand“ steht jetzt auch dort.
+- **Bargeld-Abgleich:** Hast du mehr Bargeld als gedacht und gibt es einen Bar-Eintrag mit genau dem Betrag, fragt Cashdy, ob der vielleicht gar nicht bar war.
+- **Bar oder Konto:** Beim Eintragen wählst du „Konto / Karte“ oder „🪙 Bar“, in den Listen steht an Bar-Einträgen „🪙 bar“.
+- **Startmonat:** Was seit dem Start schon aufs Konto kam, heißt jetzt „Seitdem reingekommen“. „Kommt noch rein“ steht nur noch da, wenn wirklich noch Geld erwartet wird.
+- **Monat:** Der Monatswechsler bleibt beim Scrollen oben stehen.

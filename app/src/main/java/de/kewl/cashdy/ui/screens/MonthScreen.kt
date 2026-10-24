@@ -87,8 +87,22 @@ fun MonthScreen(start: LocalDate? = null, openCategory: String? = null) {
     val canGoNext = period.start.isBefore(today.plusMonths(12))
     val future = period.start.isAfter(today)
 
+    // Kopf und Monatswechsler bleiben oben stehen, nur der Rest scrollt.
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        ScreenHeader("Monat", onBack = { ui.back() })
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(c.surface).padding(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Arrow("‹") { anchor = Periods.previous(period, d.settings).start }
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(period.label, style = MaterialTheme.typography.titleMedium, color = c.fg)
+                Text(period.rangeLabel, style = MaterialTheme.typography.bodySmall, color = c.muted)
+            }
+            Arrow("›", enabled = canGoNext) { anchor = Periods.next(period, d.settings).start }
+        }
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
+        Modifier.weight(1f).verticalScroll(rememberScrollState())
             .pointerInput(period) {
                 var total = 0f
                 detectHorizontalDragGestures(
@@ -101,17 +115,7 @@ fun MonthScreen(start: LocalDate? = null, openCategory: String? = null) {
             },
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ScreenHeader("Monat", onBack = { ui.back() })
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Arrow("‹") { anchor = Periods.previous(period, d.settings).start }
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(period.label, style = MaterialTheme.typography.titleMedium, color = c.fg)
-                Text(period.rangeLabel, style = MaterialTheme.typography.bodySmall, color = c.muted)
-            }
-            Arrow("›", enabled = canGoNext) { anchor = Periods.next(period, d.settings).start }
-        }
-
+        Spacer(Modifier.height(0.dp))
         compareText(d, sum, prevSum, today)?.let { (better, text) ->
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(c.soft3).padding(10.dp),
@@ -191,6 +195,7 @@ fun MonthScreen(start: LocalDate? = null, openCategory: String? = null) {
         }
         Spacer(Modifier.height(110.dp))
     }
+    }
 }
 
 /**
@@ -256,7 +261,7 @@ private const val SAVED = "_saved"
 @Composable
 private fun Arrow(t: String, enabled: Boolean = true, onClick: () -> Unit) {
     Box(
-        Modifier.size(40.dp).clip(CircleShape).background(if (enabled) C.colors.surface else C.colors.bg)
+        Modifier.size(40.dp).clip(CircleShape).background(if (enabled) C.colors.soft2 else C.colors.surface)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { Text(t, fontSize = 24.sp, color = if (enabled) C.colors.fg else C.colors.line) }

@@ -47,8 +47,6 @@ fun MoreScreen() {
     val d by Store.data.collectAsState()
     val ctx = LocalContext.current
     val pending = Detection.pending(d).size
-    var restart by remember { mutableStateOf(false) }
-    if (restart) RestartDialog { restart = false }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -67,9 +65,7 @@ fun MoreScreen() {
             GroupDivider()
             MenuRow("Erkannte Zahlungen", if (pending > 0) "$pending warten auf dich" else "Alles erledigt", badge = pending.takeIf { it > 0 }?.toString()) { ui.go(Route.Inbox()) }
             GroupDivider()
-            MenuRow("Kontostand prüfen", "Stimmt Cashdy mit deinem Konto überein?") { ui.go(Route.BankCheck) }
-            GroupDivider()
-            MenuRow("Neu anfangen mit Kontostand", "Wenn die Zahlen nicht mehr stimmen") { restart = true }
+            MenuRow("Kontostand prüfen", "Stimmt Cashdy mit deinem Konto? Oder neu anfangen") { ui.go(Route.BankCheck) }
         }
 
         SectionTitle("Hilfe")
@@ -87,7 +83,7 @@ fun MoreScreen() {
  * Einrichten. Einträge, Fixkosten und Rücklage bleiben.
  */
 @Composable
-private fun RestartDialog(onDone: () -> Unit) {
+fun RestartDialog(onDone: () -> Unit) {
     val d by Store.data.collectAsState()
     val c = C.colors
     var balance by remember { mutableStateOf("") }

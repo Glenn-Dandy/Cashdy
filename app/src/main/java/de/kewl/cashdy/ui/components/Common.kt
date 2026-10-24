@@ -306,11 +306,11 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
 }
 
 /**
- * Erste Zeile der Rechnung: Einnahmen. Im Startmonat stattdessen der Kontostand beim Start und
- * darunter, was bis zum Monatsende noch reinkommt.
+ * Erste Zeile der Rechnung: Einnahmen. Im Startmonat stattdessen der Kontostand beim Start,
+ * darunter was seitdem schon reingekommen ist und was bis zum Monatsende noch reinkommt.
  */
 @Composable
-fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (() -> Unit)? = null) {
+fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (() -> Unit)? = null, today: LocalDate = LocalDate.now()) {
     val start = sum.startMoney
     if (start == null || startDay == null) {
         ValueRow("Einnahmen", Money.format(sum.income), onClick = onClick)
@@ -322,9 +322,15 @@ fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (
         note = "Startmonat, ab dem ${sum.period.end.plusDays(1).format(dm)} rechne ich normal", onClick = onClick,
     )
     val rest = sum.income - start
-    if (rest != 0L) {
+    val received = sum.incomeItems.filter { !it.date.isAfter(today) }.sumOf { it.amount } +
+        sum.entries.filter { it.kind == EntryKind.INCOME && !it.date.isBefore(startDay) && !it.date.isAfter(today) }.sumOf { it.amount }
+    if (received != 0L) {
         GroupDivider()
-        ValueRow("Kommt noch rein", Money.format(rest), onClick = onClick)
+        ValueRow("Seitdem reingekommen", Money.format(received), onClick = onClick)
+    }
+    if (rest - received != 0L) {
+        GroupDivider()
+        ValueRow("Kommt noch rein", Money.format(rest - received), onClick = onClick)
     }
 }
 

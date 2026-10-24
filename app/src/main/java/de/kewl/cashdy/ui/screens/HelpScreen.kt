@@ -82,7 +82,7 @@ fun HelpScreen() {
                 Para("„Heute drin“ ist dieser Betrag geteilt durch die Tage, die der Monat noch hat.")
                 Para("Im ersten Monat rechne ich anders: Statt mit dem ganzen Gehalt starte ich mit deinem Kontostand vom ersten Tag. Was bis dahin abgebucht wurde, steckt schon darin. Gehalt und Fixkosten, die danach noch kommen, rechne ich dazu oder ab, auch seltene Rechnungen mit vollem Betrag. Ab dem nächsten Monat geht es ganz normal weiter, und die Rücklage fängt an.")
                 Para("Ob alles stimmt, siehst du unter Mehr › Kontostand prüfen: Tipp ein, was deine Banking-App zeigt. Ich sage dir, ob es passt, und suche nach dem Eintrag, der die Differenz erklärt, zum Beispiel eine Zahlung, die auf bar steht, aber vom Konto ging.")
-                Para("Stimmen die Zahlen irgendwann nicht mehr, zum Beispiel weil du ein paar Wochen nichts eingetragen hast: Unter Mehr › Neu anfangen mit Kontostand rechne ich ab heute wieder mit deinem echten Kontostand. Es wird nichts gelöscht.")
+                Para("Stimmen die Zahlen irgendwann nicht mehr, zum Beispiel weil du ein paar Wochen nichts eingetragen hast: Unter Mehr › Kontostand prüfen › Neu anfangen rechne ich ab heute wieder mit deinem echten Kontostand. Es wird nichts gelöscht.")
             }
             GroupDivider()
             Topic("Wie funktioniert die Rücklage?", open == 2, { open = if (open == 2) -1 else 2 }) {
