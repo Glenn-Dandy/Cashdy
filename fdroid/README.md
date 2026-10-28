@@ -13,7 +13,7 @@ bauen bei F-Droid nicht.
    `en-US/images/`). F-Droid holt sie selbst.
 2. **Rezept** [`de.kewl.cashdy.yml`](de.kewl.cashdy.yml) per Merge Request bei
    <https://gitlab.com/fdroid/fdroiddata> als `metadata/de.kewl.cashdy.yml` einreichen.
-   Dort `commit:` auf den Commit-Hash des Tags setzen. Die Datei endet bewusst mit einer
+   Die Datei endet bewusst mit einer
    Leerzeile, damit nach dem Einfügen im Browser genau ein Zeilenumbruch übrig bleibt.
 3. Neue Tags `vX.Y.Z` baut F-Droid danach von selbst (`UpdateCheckMode: Tags`).
 

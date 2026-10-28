@@ -8,14 +8,17 @@ IssueTracker: https://github.com/Glenn-Dandy/Cashdy/issues
 Changelog: https://github.com/Glenn-Dandy/Cashdy/blob/HEAD/CHANGELOG.md
 Donate: https://paypal.me/GlennDandy
 
+AutoName: Cashdy
+
 RepoType: git
 Repo: https://github.com/Glenn-Dandy/Cashdy.git
-Binaries: https://github.com/Glenn-Dandy/Cashdy/releases/download/v%v/Cashdy-v%v-release.apk
+Binaries: 
+  https://github.com/Glenn-Dandy/Cashdy/releases/download/v%v/Cashdy-v%v-release.apk
 
 Builds:
   - versionName: 1.1.0
     versionCode: 7
-    commit: v1.1.0
+    commit: e187c0f0195b85871973a355905d150a493d8167
     subdir: app
     gradle:
       - yes
