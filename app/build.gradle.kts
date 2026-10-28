@@ -38,11 +38,11 @@ android {
         applicationId = "de.kewl.cashdy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6                         // manuell, steigt je Release
-        versionName = "1.0.1"                   // manuell
+        versionCode = 7                         // manuell, steigt je Release
+        versionName = "1.1.0"                   // manuell
         resValue("string", "app_name", "Cashdy")
         buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
-        // Die Texterkennung (ML Kit) bringt je Prozessorart eine 11-MB-Bibliothek mit.
+        // Die Texterkennung (Tesseract) bringt je Prozessorart rund 7 MB Bibliotheken mit.
         // x86 gibt es praktisch nur im Emulator, deshalb nur ARM.
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
@@ -50,6 +50,12 @@ android {
     // Native Bibliotheken komprimiert ablegen: kleinerer Download, entpackt wird bei der Installation.
     packaging {
         jniLibs { useLegacyPackaging = true }
+    }
+
+    // Das Tesseract-Modell unkomprimiert ablegen: spart nur gut 10 %, dafür lässt sich seine
+    // Größe direkt lesen (TesseractScanner prüft so, ob die kopierte Fassung aktuell ist).
+    androidResources {
+        noCompress += "traineddata"
     }
 
     signingConfigs {
@@ -126,7 +132,7 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     implementation(libs.kotlinx.serialization.json)
     // Texterkennung für Kassenbons, Modell liegt in der APK (läuft offline, ohne Play-Dienste-Download).
-    implementation(libs.mlkit.text.recognition)
+    implementation(libs.tesseract4android)
 
     testImplementation(libs.junit)
 }

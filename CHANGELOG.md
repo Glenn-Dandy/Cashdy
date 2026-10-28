@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+Cashdy 1.1.0: ohne Google-Bibliotheken, bereit für F-Droid.
+
+- **Kassenbon:** Die Texterkennung läuft jetzt mit Tesseract, freier Software direkt auf dem Handy, mit dem genauen deutschen Modell. Google ML Kit ist raus, es gehen keine Nutzungsdaten mehr an Google.
+- **Über Cashdy:** neu gestaltet wie bei BoatSpeedy, mit Symbolen an jeder Zeile, dem App-Symbol oben und wozise.de mit Logo unten.
+
 ## 1.0.0
 
 Cashdy 1.0.0: Die erste große Version. Cashdy zeigt dir jeden Tag, wie viel Geld diesen Monat noch frei ist. Kostenlos, ohne Werbung, ohne Bank-Login, deine Daten bleiben auf dem Handy.

@@ -1,0 +1,29 @@
+Categories:
+  - Money
+License: MIT
+AuthorName: Glenn-Dandy
+WebSite: https://glenn-dandy.github.io/Cashdy/
+SourceCode: https://github.com/Glenn-Dandy/Cashdy
+IssueTracker: https://github.com/Glenn-Dandy/Cashdy/issues
+Changelog: https://github.com/Glenn-Dandy/Cashdy/blob/HEAD/CHANGELOG.md
+Donate: https://paypal.me/GlennDandy
+
+RepoType: git
+Repo: https://github.com/Glenn-Dandy/Cashdy.git
+Binaries: https://github.com/Glenn-Dandy/Cashdy/releases/download/v%v/Cashdy-v%v-release.apk
+
+Builds:
+  - versionName: 1.1.0
+    versionCode: 7
+    commit: v1.1.0
+    subdir: app
+    gradle:
+      - yes
+
+AllowedAPKSigningKeys: 5456f67e9c163414a3cde5e2474256e87d0bb428359396b8dea2382d465cca39
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
+CurrentVersion: 1.1.0
+CurrentVersionCode: 7
+

@@ -3,6 +3,7 @@ package de.kewl.cashdy.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -20,7 +21,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.CodeOff
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FiberManualRecord
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,11 +46,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import de.kewl.cashdy.BuildConfig
+import de.kewl.cashdy.R
 import de.kewl.cashdy.data.Store
 import de.kewl.cashdy.ui.LocalUi
 import de.kewl.cashdy.ui.Route
@@ -95,9 +112,18 @@ fun AboutScreen() {
     ) {
         ScreenHeader("Über Cashdy", onBack = { ui.back() })
 
-        // Kopf: Maskottchen, Name, Version
-        Mascot(Mood.PARTY, size = 110.dp)
-        Text("Cashdy", style = MaterialTheme.typography.headlineLarge, color = c.fg)
+        // Kopf: echtes App-Symbol, Name, Version (Aufbau wie bei BoatSpeedy)
+        Spacer(Modifier.height(8.dp))
+        val appIcon = remember {
+            runCatching { ctx.packageManager.getApplicationIcon(ctx.packageName).toBitmap(width = 144, height = 144).asImageBitmap() }.getOrNull()
+        }
+        if (appIcon != null) {
+            Image(appIcon, null, Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)))
+        } else {
+            Mascot(Mood.PARTY, size = 72.dp, animate = false)
+        }
+        Spacer(Modifier.height(10.dp))
+        Text("Cashdy", style = MaterialTheme.typography.headlineSmall, color = c.fg)
         // Sieben Tipper auf die Version schalten den Entwicklermodus frei (wie bei Android).
         // Gezählt wird beim Aufsetzen, sonst schluckt der scrollbare Bereich schnelle Tipper.
         var taps by remember { mutableIntStateOf(0) }
@@ -120,31 +146,37 @@ fun AboutScreen() {
         if (!s.devMode && taps > 0 && left in 1..3) {
             Text("Noch $left× tippen …", style = MaterialTheme.typography.bodySmall, color = c.primary, modifier = Modifier.padding(top = 4.dp))
         }
-        Text("Deine Finanzen, ganz einfach.", style = MaterialTheme.typography.titleSmall, color = c.fg, modifier = Modifier.padding(top = 6.dp))
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(24.dp))
 
         Section("Feedback") {
-            ActionRow("Fehler melden") { openIssue("[Bug] ", "bug") }
+            ActionRow(Icons.Rounded.BugReport, "Fehler melden") { openIssue("[Bug] ", "bug") }
             RowDivider()
-            ActionRow("Idee vorschlagen") { openIssue("[Idee] ", "enhancement") }
+            ActionRow(Icons.Rounded.Lightbulb, "Idee vorschlagen") { openIssue("[Idee] ", "enhancement") }
         }
         Section("Projekt") {
-            ActionRow("Stern auf GitHub geben") { openUrl(Repo.URL) }
+            ActionRow(Icons.Rounded.Star, "Stern auf GitHub geben") { openUrl(Repo.URL) }
             RowDivider()
-            ActionRow("Quelltext ansehen") { openUrl(Repo.URL) }
+            ActionRow(Icons.Rounded.Code, "Quelltext ansehen") { openUrl(Repo.URL) }
             RowDivider()
-            ActionRow("Projekt unterstützen") { openUrl(Repo.SUPPORT_URL) }
+            ActionRow(Icons.Rounded.Favorite, "Projekt unterstützen", tint = c.warn) { openUrl(Repo.SUPPORT_URL) }
         }
         Section("Datenschutz") {
             Text(
                 "Keine Anmeldung, kein Bank-Login, kein Server. Alles, was du einträgst, bleibt auf deinem Handy. " +
-                    "Benachrichtigungen lese ich nur von den Apps, die du freigibst. Ins Internet geht nur die Update-Prüfung (GitHub).",
+                    "Benachrichtigungen lese ich nur von den Apps, die du freigibst. Kassenbons lese ich direkt auf dem Handy. " +
+                    "Ins Internet geht nur die Update-Prüfung (GitHub), und nur wenn du sie antippst.",
+                style = MaterialTheme.typography.bodyMedium, color = c.muted, modifier = Modifier.padding(16.dp),
+            )
+        }
+        Section("Mit dabei") {
+            Text(
+                "Texterkennung Tesseract (Apache 2.0) · Schriften Fredoka und Nunito (OFL)",
                 style = MaterialTheme.typography.bodyMedium, color = c.muted, modifier = Modifier.padding(16.dp),
             )
         }
         Section("Update") {
             when (val u = update) {
-                UpdateUi.Idle -> ActionRow("Nach Update suchen") { check() }
+                UpdateUi.Idle -> ActionRow(Icons.Rounded.SystemUpdate, "Nach Update suchen") { check() }
                 UpdateUi.Checking -> Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(20.dp), color = c.primary, strokeWidth = 2.dp)
                     Spacer(Modifier.width(12.dp))
@@ -177,15 +209,27 @@ fun AboutScreen() {
                     }
                 }
                 RowDivider()
-                ActionRow("Rekorder für Benachrichtigungen") { ui.go(Route.Recorder) }
+                ActionRow(Icons.Rounded.FiberManualRecord, "Rekorder für Benachrichtigungen") { ui.go(Route.Recorder) }
                 RowDivider()
-                ActionRow("Entwicklermodus ausschalten") { setSettings { it.copy(devMode = false, devUpdates = false) } }
+                ActionRow(Icons.Rounded.CodeOff, "Entwicklermodus ausschalten") { setSettings { it.copy(devMode = false, devUpdates = false) } }
             }
         }
 
+        Spacer(Modifier.height(8.dp))
+        // Fuß wie bei BoatSpeedy: Lizenz, Copyright, wozise.de und das Logo, beides antippbar.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("MIT-Lizenz · © ${Repo.OWNER} · ", style = MaterialTheme.typography.bodySmall, color = c.muted)
+            Text(
+                Repo.WEBSITE_LABEL, style = MaterialTheme.typography.bodySmall, color = c.primary,
+                modifier = Modifier.clickable { openUrl(Repo.WEBSITE_URL) },
+            )
+        }
         Spacer(Modifier.height(12.dp))
-        Text("Build ${BuildConfig.GIT_SHA} · MIT-Lizenz · © ${Repo.OWNER}", style = MaterialTheme.typography.bodySmall, color = c.muted)
-        Text("Schriften Fredoka und Nunito (OFL) · Texterkennung Google ML Kit", style = MaterialTheme.typography.bodySmall, color = c.muted)
+        Image(
+            painterResource(if (c.dark) R.drawable.ic_wozise_logo_dark else R.drawable.ic_wozise_logo),
+            contentDescription = Repo.WEBSITE_LABEL,
+            modifier = Modifier.clickable { openUrl(Repo.WEBSITE_URL) },
+        )
         Spacer(Modifier.height(32.dp))
     }
 }
@@ -199,11 +243,13 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun ActionRow(label: String, onClick: () -> Unit) {
+private fun ActionRow(icon: ImageVector, label: String, tint: Color = C.colors.primary, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Icon(icon, contentDescription = null, tint = tint)
+        Spacer(Modifier.width(16.dp))
         Text(label, style = RowTitle, color = C.colors.fg, modifier = Modifier.weight(1f))
         Box { Text("›", color = C.colors.muted, fontSize = 22.sp) }
     }
@@ -211,5 +257,5 @@ private fun ActionRow(label: String, onClick: () -> Unit) {
 
 @Composable
 private fun RowDivider() {
-    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = C.colors.line)
+    HorizontalDivider(Modifier.padding(start = 56.dp, end = 16.dp), color = C.colors.line)
 }

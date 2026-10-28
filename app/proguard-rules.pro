@@ -6,3 +6,8 @@
 -keep,includedescriptorclasses class de.kewl.cashdy.**$$serializer { *; }
 -keepclassmembers class de.kewl.cashdy.** { *** Companion; }
 -keepclasseswithmembers class de.kewl.cashdy.** { kotlinx.serialization.KSerializer serializer(...); }
+
+# Tesseract4Android: der native Teil greift per JNI auf Felder und Konstruktoren dieser
+# Klassen zu, die Bibliothek bringt selbst keine Regeln mit.
+-keep class com.googlecode.tesseract.android.** { *; }
+-keep class com.googlecode.leptonica.android.** { *; }

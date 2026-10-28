@@ -36,7 +36,7 @@ JAVA_HOME=/pfad/zu/jdk17 ./gradlew assembleDebug        # Debug, eigenes Paket
 JAVA_HOME=/pfad/zu/jdk17 ./gradlew testDebugUnitTest    # Tests
 ```
 
-Kotlin, Jetpack Compose, Material 3, kotlinx.serialization, WorkManager, ML Kit
+Kotlin, Jetpack Compose, Material 3, kotlinx.serialization, WorkManager, Tesseract (Texterkennung)
 Texterkennung (auf dem Gerät). Mindestens Android 8.
 
 ## Lizenz

@@ -1,0 +1,18 @@
+Cashdy shows you every day how much money you still have free to spend this month. No bank login, no account management, no jargon. Made for everyone who finds other finance apps too complicated or too expensive.
+
+<b>The app is currently available in German only.</b>
+
+• One big number: "still free" and "X € left for today"
+• Add an expense in seconds, also from a widget or quick settings tile
+• Detects payments from PayPal, DKB and Google Wallet notifications
+• Fixed costs with price history, yearly costs spread over the months
+• Planned payments that will be charged later
+• Month starts on the 1st, on a fixed day or when your salary arrives
+• Statistics over 6 months or a year, saving with a reserve
+• Check your balance: Cashdy looks for where a difference comes from
+• Cash wallet with reconciliation
+• Scan receipts (text recognition runs on your phone), import bank statements (CSV)
+• Friendly reminders
+• Backup to a file or to your own Nextcloud
+
+Everything stays on your phone. No ads, no tracking, no Google services. The only network access is the update check, and only when you tap it.

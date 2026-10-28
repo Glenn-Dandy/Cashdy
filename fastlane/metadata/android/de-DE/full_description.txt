@@ -1,13 +1,16 @@
-Cashdy zeigt dir jeden Tag, wie viel Geld du diesen Monat noch frei hast. Ohne Bank-Login, ohne Konto-Verwaltung, ohne Fachchinesisch.
+Cashdy zeigt dir jeden Tag, wie viel Geld du diesen Monat noch frei hast. Ohne Bank-Login, ohne Konto-Verwaltung, ohne Fachchinesisch. Gemacht für alle, denen andere Finanz-Apps zu kompliziert oder zu teuer sind.
 
 • Eine große Zahl: „Noch frei“ und „heute X € drin“
 • Ausgabe in Sekunden, auch per Widget und Schnellkachel
 • Zahlungen von PayPal, DKB und Google Wallet automatisch erkennen
 • Fixkosten mit Preis-Historie, Jahreskosten auf die Monate verteilt
+• Vorgemerkte Zahlungen, die erst später abgebucht werden
 • Monat ab dem 1., ab festem Tag oder ab Gehaltseingang
+• Statistik über 6 Monate oder ein Jahr, Sparen mit Rücklage
+• Kontostand prüfen: Cashdy sucht, woher eine Differenz kommt
 • Bargeld-Portemonnaie mit Abgleich
-• Kassenbon fotografieren, Kontoauszug (CSV) einlesen
+• Kassenbon fotografieren (Texterkennung direkt auf dem Handy), Kontoauszug (CSV) einlesen
 • Freundliche Erinnerungen
 • Sicherung als Datei oder auf die eigene Nextcloud
 
-Alles bleibt auf deinem Handy.
+Alles bleibt auf deinem Handy. Keine Werbung, kein Tracking, keine Google-Dienste. Ins Internet geht nur die Update-Prüfung, wenn du sie antippst.

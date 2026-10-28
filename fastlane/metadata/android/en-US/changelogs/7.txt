@@ -1,0 +1,4 @@
+Cashdy 1.1.0: no Google libraries
+
+- Receipts: text recognition now uses Tesseract, free software running on your phone. Google ML Kit is gone, no usage data goes to Google anymore.
+- About: redesigned, with icons and a link to wozise.de.

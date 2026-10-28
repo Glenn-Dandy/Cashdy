@@ -1,0 +1,4 @@
+Cashdy 1.1.0: ohne Google-Bibliotheken
+
+- Kassenbon: Die Texterkennung läuft jetzt mit Tesseract, freier Software direkt auf dem Handy. Google ML Kit ist raus, es gehen keine Nutzungsdaten mehr an Google.
+- Über Cashdy: neu gestaltet, mit Symbolen und Link zu wozise.de.
