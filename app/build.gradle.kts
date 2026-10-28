@@ -38,8 +38,8 @@ android {
         applicationId = "de.kewl.cashdy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7                         // manuell, steigt je Release
-        versionName = "1.1.0"                   // manuell
+        versionCode = 8                         // manuell, steigt je Release
+        versionName = "1.1.1"                   // manuell
         resValue("string", "app_name", "Cashdy")
         buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
         // Die Texterkennung (Tesseract) bringt je Prozessorart rund 7 MB Bibliotheken mit.
