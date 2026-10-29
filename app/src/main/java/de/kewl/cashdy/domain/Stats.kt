@@ -154,8 +154,8 @@ object Stats {
 
         // Der beste Monat.
         if (out.size < 3 && done.size >= 2) {
-            done.maxByOrNull { it.sum.free }?.takeIf { it.sum.free > 0 }?.let {
-                out += Insight("Im ${it.period.shortLabel} ist dir am meisten übrig geblieben: ${Money.format(it.sum.free)}.")
+            done.maxByOrNull { it.sum.result }?.takeIf { it.sum.result > 0 }?.let {
+                out += Insight("Im ${it.period.shortLabel} ist dir am meisten übrig geblieben: ${Money.format(it.sum.result)}.")
             }
         }
         return out.take(3)

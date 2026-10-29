@@ -197,7 +197,8 @@ fun HomeScreen() {
                     Text(Money.centsPart(kotlin.math.abs(sum.free)), style = MaterialTheme.typography.headlineSmall, color = c.heroFg.copy(alpha = 0.8f), modifier = Modifier.padding(bottom = 6.dp))
                 }
                 Spacer(Modifier.height(10.dp))
-                val frac = if (sum.income > 0) (sum.free.toFloat() / sum.income).coerceIn(0f, 1f) else 0f
+                val total = sum.income + sum.carry
+                val frac = if (total > 0) (sum.free.toFloat() / total).coerceIn(0f, 1f) else 0f
                 CoinBar(frac, c.heroChip, c.coin)
                 Spacer(Modifier.height(8.dp))
                 Text(

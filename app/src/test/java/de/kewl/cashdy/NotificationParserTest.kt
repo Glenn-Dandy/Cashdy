@@ -140,4 +140,29 @@ class NotificationParserTest {
         assertEquals(1033L, p.amount)
         assertEquals("Sonderpreis Baumarkt", p.merchant)
     }
+
+    // Nach dem Muster der DKB-Meldungen: Geld, das reinkommt, steht mit Plus da.
+    @Test fun dkbNewIncomingWithPlus() {
+        val salary = NotificationParser.parse(dkbNew, "Umsatz gebucht (*1234)", "+1.850,00 Euro von Muster GmbH")!!
+        assertEquals(DetectedKind.INCOME, salary.kind)
+        assertEquals(185000L, salary.amount)
+        val ebay = NotificationParser.parse(dkbNew, "Umsatz gebucht (*1234)", "+12,90 Euro von eBay S.a.r.l.")!!
+        assertEquals(DetectedKind.INCOME, ebay.kind)
+        assertEquals(1290L, ebay.amount)
+        assertEquals("eBay", ebay.merchant)
+    }
+
+    @Test fun dkbNewDeclinedIsNoPayment() {
+        assertNull(NotificationParser.parse(
+            dkbNew, "Zahlung abgelehnt",
+            "Die Karte wurde noch nicht aktiviert. Vergib in der DKB-App deine Wunsch-PIN und versuche es erneut. 9,80 EUR (9,80 EUR), Kino am Markt, Visa Debitkarte ****1234",
+        ))
+    }
+
+    // Im Original mit geschütztem Leerzeichen, das erkennt \s nur auf Android, nicht in der JVM.
+    @Test fun paypalReceivedIsIncome() {
+        val p = NotificationParser.parse(paypal, "Du hast erhalten 2,99 € EUR", "Max Mustermann: \"Danke!\"")!!
+        assertEquals(DetectedKind.INCOME, p.kind)
+        assertEquals(299L, p.amount)
+    }
 }

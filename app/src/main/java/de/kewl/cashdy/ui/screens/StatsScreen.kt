@@ -190,7 +190,7 @@ private fun MonthsCard(months: List<MonthStat>, yearMode: Boolean, year: Int, to
     val ui = LocalUi.current
     val c = C.colors
     val done = months.filter { it.used && it.done }
-    val plus = done.count { it.sum.free >= 0 }
+    val plus = done.count { it.sum.result >= 0 }
     StatCard {
         Text("Wie liefen deine Monate?", style = MaterialTheme.typography.titleMedium, color = c.fg)
         if (done.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
@@ -208,10 +208,10 @@ private fun MonthsCard(months: List<MonthStat>, yearMode: Boolean, year: Int, to
                     m.current -> BarState.OPEN
                     !m.used && m.period.start.isAfter(today) -> BarState.PLAN
                     !m.used -> BarState.EMPTY
-                    m.sum.free >= 0 -> BarState.PLUS
+                    m.sum.result >= 0 -> BarState.PLUS
                     else -> BarState.MINUS
                 }
-                Bar(abbr(m.period, short = yearMode), m.sum.free, state) {
+                Bar(abbr(m.period, short = yearMode), m.sum.result, state) {
                     ui.go(Route.MonthDetail(m.period.start))
                 }.let { b -> if (state == BarState.EMPTY || state == BarState.PLAN) b.copy(onClick = null) else b }
             },
@@ -250,9 +250,9 @@ private fun YearTable(months: List<MonthStat>, today: LocalDate) {
                     Text(Money.short(s.income), style = MaterialTheme.typography.bodyMedium, color = tone, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
                     Text(Money.short(s.fixed + s.reserve), style = MaterialTheme.typography.bodyMedium, color = tone, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
                     Text(
-                        (if (past && s.free > 0) "+" else "") + Money.short(s.free),
+                        (if (past && s.result > 0) "+" else "") + Money.short(s.result),
                         style = MaterialTheme.typography.titleSmall,
-                        color = if (s.free < 0) c.warn else if (now) c.primary else c.fg,
+                        color = if (s.result < 0) c.warn else if (now) c.primary else c.fg,
                         textAlign = TextAlign.End, modifier = Modifier.weight(1f),
                     )
                 }

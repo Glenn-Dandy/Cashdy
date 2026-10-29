@@ -36,7 +36,14 @@ data class Summary(
     val saved: Cents = 0,
     /** Vorgemerkt: Ausgaben mit Datum nach heute. Stecken schon in [spent]. */
     val planned: Cents = 0,
-)
+    /** Übrig (oder drüber) aus den Monaten davor, seit dem Start mit Kontostand. Steckt schon in [free]. */
+    val carry: Cents = 0,
+    /** Der Monat, aus dem [carry] kommt. */
+    val carryFrom: Period? = null,
+) {
+    /** Ergebnis nur dieses Monats, ohne Übertrag. Für Vergleiche und die Statistik. */
+    val result: Cents get() = free - carry
+}
 
 data class YearPlan(val year: Int, val months: List<Summary>, val fixedTotal: Cents) {
     val fixedPerMonth: Cents get() = fixedTotal / 12
@@ -56,7 +63,36 @@ object Budget {
         if (cashMode == CashMode.SIMPLE && e.kind == EntryKind.EXPENSE && e.method == PayMethod.CASH) 0 else v
     }
 
+    /**
+     * Was übrig bleibt, geht in den nächsten Monat mit, sonst wäre der Rest am Monatsende einfach
+     * weg, obwohl er auf dem Konto liegt. Wer ihn dann aufs Sparkonto legt, stünde im neuen Monat
+     * im Minus. Gezählt wird ab dem Start mit Kontostand, ohne den gibt es keinen Übertrag.
+     */
     fun summary(d: AppData, p: Period, today: LocalDate = LocalDate.now()): Summary {
+        val own = monthOnly(d, p, today)
+        val carry = carryInto(d, p, today) ?: return own
+        val free = own.free + carry
+        val perDay = if (own.daysLeft > 0 && free > 0) free / own.daysLeft else 0
+        return own.copy(free = free, perDay = perDay, carry = carry, carryFrom = Periods.previous(p, d.settings))
+    }
+
+    /** Summe der Monatsergebnisse vom Startmonat bis vor [p], oder null, wenn [p] der Startmonat ist oder davor liegt. */
+    private fun carryInto(d: AppData, p: Period, today: LocalDate): Cents? {
+        val s = d.settings
+        val startDay = s.startDay?.takeIf { s.startBalance != null } ?: return null
+        var q = Periods.periodFor(startDay, s)
+        if (!q.end.isBefore(p.start)) return null
+        var carry = 0L
+        // Begrenzt, falls die Zeiträume sich einmal nicht sauber aneinanderreihen.
+        var n = 0
+        while (q.end.isBefore(p.start) && n++ < 600) {
+            carry += monthOnly(d, q, today).free
+            q = Periods.next(q, s)
+        }
+        return carry
+    }
+
+    private fun monthOnly(d: AppData, p: Period, today: LocalDate): Summary {
         val s = d.settings
         val incomeItems = mutableListOf<Occurrence>()
         val fixedItems = mutableListOf<Occurrence>()

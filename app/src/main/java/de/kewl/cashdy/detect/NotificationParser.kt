@@ -56,13 +56,18 @@ object NotificationParser {
 
     fun hasAmount(text: String): Boolean = findAmount(text) != null
 
+    // DKB: „+48,34 Euro von eBay S.a.r.l.“ ist Geld, das reinkommt.
+    private val plusAmount = Regex("""\+\s?(?:$NUM)\s?(?:€|EUR|Euro)|(?:€|EUR)\s?\+(?:$NUM)""", RegexOption.IGNORE_CASE)
+
     private val skipWords = listOf(
         "tan", "freigabe", "freigeben", "bestätig", "bestaetig", "anmeldung", "login", "einloggen",
         "sicherheitscode", "verifizier", "angebot", "gutschein", "rabatt", "cashback-aktion", "kontostand",
-        "dein limit", "abgelehnt", "nicht durchgeführt", "fehlgeschlagen", "declined",
+        "dein limit",
     )
+    // Nicht bezahlt, auch wenn „Zahlung“ im Text steht: „Zahlung abgelehnt“ (DKB, Karte nicht aktiviert).
+    private val failWords = listOf("abgelehnt", "nicht durchgeführt", "fehlgeschlagen", "declined")
     private val cashWords = listOf("bargeld", "geldautomat", "auszahlung am", "abhebung", "atm", "bargeldauszahlung", "cash withdrawal")
-    private val incomeWords = listOf("gutschrift", "zahlungseingang", "geldeingang", "eingegangen", "hast du erhalten", "haben sie erhalten", "erhalten:", "hat dir", "hat ihnen", "received", "sent you", "überweisung erhalten")
+    private val incomeWords = listOf("gutschrift", "zahlungseingang", "geldeingang", "eingegangen", "hast du erhalten", "du hast erhalten", "haben sie erhalten", "erhalten:", "hat dir", "hat ihnen", "received", "sent you", "überweisung erhalten")
     private val refundWords = listOf("rückerstattung", "rueckerstattung", "erstattet", "erstattung", "refund", "zurückgezahlt", "gutgeschrieben (rück")
 
     // "bei REWE", "an Netflix", "Einkauf bei X", "Zahlung an X", "to X", "at X"
@@ -78,6 +83,7 @@ object NotificationParser {
         val lower = full.lowercase()
         val amount = findAmount(full) ?: return null
         if (amount == 0L) return null
+        if (failWords.any { lower.contains(it) }) return null
         if (skipWords.any { w -> Regex("""(?<![\p{L}])${Regex.escape(w)}""").containsMatchIn(lower) } &&
             !lower.contains("zahlung") && !lower.contains("einkauf")) return null
 
@@ -86,7 +92,7 @@ object NotificationParser {
         val kind = when {
             refundWords.any { lower.contains(it) } -> DetectedKind.REFUND
             cashWords.any { lower.contains(it) } -> DetectedKind.CASH
-            incomeWords.any { lower.contains(it) } -> DetectedKind.INCOME
+            incomeWords.any { lower.contains(it) } || plusAmount.containsMatchIn(full) -> DetectedKind.INCOME
             else -> DetectedKind.EXPENSE
         }
         var merchant = extractMerchant(title, text, amount)

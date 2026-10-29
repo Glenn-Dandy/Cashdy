@@ -311,6 +311,14 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
  */
 @Composable
 fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (() -> Unit)? = null, today: LocalDate = LocalDate.now()) {
+    sum.carryFrom?.let { from ->
+        ValueRow(
+            "Aus ${from.shortLabel} " + if (sum.carry >= 0) "übrig" else "drüber",
+            (if (sum.carry >= 0) "+ " else "− ") + Money.format(kotlin.math.abs(sum.carry)),
+            valueColor = if (sum.carry >= 0) C.colors.fg else C.colors.warn, onClick = onClick,
+        )
+        GroupDivider()
+    }
     val start = sum.startMoney
     if (start == null || startDay == null) {
         ValueRow("Einnahmen", Money.format(sum.income), onClick = onClick)

@@ -309,4 +309,46 @@ class BudgetTest {
         // Am Tag selbst ist es ein ganz normaler Eintrag.
         assertEquals(0L, Budget.summary(data, Periods.calendar(today), d(2026, 10, 30)).planned)
     }
+
+    // Der Rest aus Oktober kommt aufs Sparkonto und darf im November kein Minus machen.
+    private val smallRent = Recurring("r30", "Miete", firstDue = d(2026, 1, 1), prices = listOf(PriceStep(d(2026, 1, 1), 30_000)))
+
+    @Test fun leftoverCarriesIntoNextMonth() {
+        val data = AppData(
+            recurring = listOf(smallRent),
+            entries = listOf(
+                Entry("o1", 20_000, d(2026, 10, 20), EntryKind.EXPENSE, "food", "REWE"),
+                Entry("n1", 120_000, d(2026, 11, 2), EntryKind.INCOME, "salary"),
+                Entry("n2", 80_000, d(2026, 11, 3), EntryKind.SAVING),
+            ),
+            settings = Settings(periodMode = PeriodMode.CALENDAR, startDay = d(2026, 10, 12), startBalance = 100_000),
+        )
+        val today = d(2026, 11, 10)
+        val oct = Budget.summary(data, Periods.periodFor(d(2026, 10, 15), data.settings), today)
+        assertEquals(0L, oct.carry)
+        assertEquals(80_000L, oct.free)
+
+        val nov = Budget.summary(data, Periods.periodFor(d(2026, 11, 15), data.settings), today)
+        assertEquals(80_000L, nov.carry)
+        assertEquals(oct.period, nov.carryFrom)
+        assertEquals(10_000L, nov.result)
+        assertEquals(90_000L, nov.free)
+
+        // Auch ein Minus geht mit.
+        val dec = Budget.summary(data, Periods.periodFor(d(2026, 12, 15), data.settings), today)
+        assertEquals(90_000L, dec.carry)
+        assertEquals(60_000L, dec.free)
+    }
+
+    @Test fun noCarryWithoutStartBalance() {
+        val data = AppData(
+            recurring = listOf(smallRent),
+            entries = listOf(Entry("n1", 120_000, d(2026, 11, 2), EntryKind.INCOME, "salary")),
+            settings = Settings(periodMode = PeriodMode.CALENDAR),
+        )
+        val nov = Budget.summary(data, Periods.periodFor(d(2026, 11, 15), data.settings), d(2026, 11, 10))
+        assertEquals(0L, nov.carry)
+        assertEquals(null, nov.carryFrom)
+        assertEquals(90_000L, nov.free)
+    }
 }
