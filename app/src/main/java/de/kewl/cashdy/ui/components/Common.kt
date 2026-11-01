@@ -308,9 +308,15 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
 /**
  * Erste Zeile der Rechnung: Einnahmen. Im Startmonat stattdessen der Kontostand beim Start,
  * darunter was seitdem schon reingekommen ist und was bis zum Monatsende noch reinkommt.
+ * [compact] steckt den Übertrag aus dem Vormonat mit in die Einnahmen, damit die Startseite
+ * nicht zu viele Zahlen zeigt. Aufgeschlüsselt steht er in der Monatsansicht.
  */
 @Composable
-fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (() -> Unit)? = null, today: LocalDate = LocalDate.now()) {
+fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (() -> Unit)? = null, today: LocalDate = LocalDate.now(), compact: Boolean = false) {
+    if (compact && sum.startMoney == null) {
+        ValueRow("Einnahmen", Money.format(sum.income + sum.carry), onClick = onClick)
+        return
+    }
     sum.carryFrom?.let { from ->
         ValueRow(
             "Aus ${from.shortLabel} " + if (sum.carry >= 0) "übrig" else "drüber",
@@ -331,7 +337,13 @@ fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (
     )
     val rest = sum.income - start
     val received = sum.incomeItems.filter { !it.date.isAfter(today) }.sumOf { it.amount } +
-        sum.entries.filter { it.kind == EntryKind.INCOME && !it.date.isBefore(startDay) && !it.date.isAfter(today) }.sumOf { it.amount }
+        sum.entries.filter { !it.date.isBefore(startDay) && !it.date.isAfter(today) }.sumOf {
+            when {
+                it.kind == EntryKind.INCOME -> it.amount
+                it.kind == EntryKind.CASH_ADJUST && withCash && it.amount < 0 -> -it.amount
+                else -> 0L
+            }
+        }
     if (received != 0L) {
         GroupDivider()
         ValueRow("Seitdem reingekommen", Money.format(received), onClick = onClick)
@@ -341,6 +353,9 @@ fun IncomeRows(sum: Summary, startDay: LocalDate?, withCash: Boolean, onClick: (
         ValueRow("Kommt noch rein", Money.format(rest - received), onClick = onClick)
     }
 }
+
+/** "− 12,00 €" für Ausgaben, "+ 12,00 €" wenn Erstattungen überwiegen. */
+fun spentLabel(spent: Cents): String = if (spent < 0) "+ " + Money.format(-spent) else "− " + Money.format(spent)
 
 fun categoryTint(cat: Category?, dark: Boolean): Color {
     val base = Color(cat?.color ?: 0xFFC3BED6)
@@ -372,7 +387,7 @@ fun shortDay(d: LocalDate, today: LocalDate = LocalDate.now()): String = when {
 
 fun entryTitle(e: Entry, cat: Category?): String = when (e.kind) {
     EntryKind.CASH_WITHDRAWAL -> "Geld abgehoben"
-    EntryKind.CASH_ADJUST -> "Bargeld-Abgleich"
+    EntryKind.CASH_ADJUST -> if (e.amount < 0) "Bargeld gefunden" else "Bargeld-Abgleich"
     EntryKind.CASH_START -> "Bargeld-Startbestand"
     EntryKind.SAVING -> e.merchant.ifBlank { "Gespart" }
     else -> e.merchant.ifBlank { cat?.name ?: "Ausgabe" }
@@ -382,7 +397,7 @@ fun entryTitle(e: Entry, cat: Category?): String = when (e.kind) {
 @Composable
 fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> Unit) {
     val c = C.colors
-    val positive = e.kind == EntryKind.INCOME || e.kind == EntryKind.REFUND
+    val positive = e.kind == EntryKind.INCOME || e.kind == EntryKind.REFUND || (e.kind == EntryKind.CASH_ADJUST && e.amount < 0)
     val neutral = e.kind == EntryKind.CASH_WITHDRAWAL || e.kind == EntryKind.CASH_START
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = rowStart, end = 16.dp, top = 11.dp, bottom = 11.dp),
@@ -406,8 +421,8 @@ fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> 
         }
         Text(
             when {
-                positive -> "+" + Money.format(e.amount)
                 e.kind == EntryKind.CASH_ADJUST && e.amount < 0 -> "+" + Money.format(-e.amount)
+                positive -> "+" + Money.format(e.amount)
                 else -> Money.format(e.amount)
             },
             style = ItemValue,

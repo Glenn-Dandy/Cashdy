@@ -351,4 +351,25 @@ class BudgetTest {
         assertEquals(null, nov.carryFrom)
         assertEquals(90_000L, nov.free)
     }
+
+    @Test fun foundCashCountsAsIncomeNotAsNegativeSpending() {
+        val data = AppData(
+            recurring = listOf(salary, rent),
+            entries = listOf(
+                Entry("e", 2_000, d(2026, 10, 3), EntryKind.EXPENSE, "food"),
+                Entry("f", -2_500, d(2026, 10, 5), EntryKind.CASH_ADJUST, method = PayMethod.CASH),
+                Entry("m", 700, d(2026, 10, 6), EntryKind.CASH_ADJUST, method = PayMethod.CASH),
+            ),
+        )
+        val oct = Budget.summary(data, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 10))
+        // Gefunden: Einnahme. Fehlt Bargeld: Ausgabe.
+        assertEquals(300_000L + 2_500, oct.income)
+        assertEquals(2_000L + 700, oct.spent)
+        assertEquals(300_000L + 2_500 - 85_000 - 2_700, oct.free)
+
+        // Einfach-Modus: Bargeld spielt keine Rolle.
+        val simple = Budget.summary(data.copy(settings = Settings(cashMode = CashMode.SIMPLE)), Periods.calendar(d(2026, 10, 1)), d(2026, 10, 10))
+        assertEquals(300_000L, simple.income)
+        assertEquals(2_000L, simple.spent)
+    }
 }

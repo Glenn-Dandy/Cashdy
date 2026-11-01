@@ -58,6 +58,7 @@ import de.kewl.cashdy.ui.components.GroupDivider
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.IncomeRows
 import de.kewl.cashdy.ui.components.ValueRow
+import de.kewl.cashdy.ui.components.spentLabel
 import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.domain.Period
 import de.kewl.cashdy.domain.Recurrence
@@ -136,7 +137,7 @@ fun MonthScreen(start: LocalDate? = null, openCategory: String? = null) {
                 ValueRow("Rücklage", "− " + Money.format(sum.reserve))
             }
             GroupDivider()
-            ValueRow("Ausgegeben", "− " + Money.format(sum.spent), note = if (sum.planned > 0) "davon ${Money.format(sum.planned)} vorgemerkt" else null)
+            ValueRow("Ausgegeben", spentLabel(sum.spent), note = if (sum.planned > 0) "davon ${Money.format(sum.planned)} vorgemerkt" else null)
             if (sum.saved > 0) {
                 GroupDivider()
                 ValueRow("Gespart", "− " + Money.format(sum.saved), note = "aufs Sparkonto gelegt", valueColor = c.good)
@@ -215,7 +216,7 @@ private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableM
     fun value(e: Entry): Cents = when (e.kind) {
         EntryKind.INCOME -> -e.amount
         EntryKind.SAVING -> e.amount
-        else -> Budget.spendingValue(e, cashMode)
+        else -> Budget.spendingValue(e, cashMode) - Budget.cashFound(e, cashMode)
     }
     val prevBy = prev.groupBy(::key).mapValues { (_, es) -> es.sumOf(::value) }
     val groups = entries.groupBy(::key).map { (k, es) -> Triple(k, es, es.sumOf(::value)) }

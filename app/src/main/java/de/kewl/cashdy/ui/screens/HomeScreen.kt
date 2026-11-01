@@ -58,6 +58,7 @@ import de.kewl.cashdy.ui.components.GroupDivider
 import de.kewl.cashdy.ui.components.MenuRow
 import de.kewl.cashdy.ui.components.IncomeRows
 import de.kewl.cashdy.ui.components.ValueRow
+import de.kewl.cashdy.ui.components.spentLabel
 import de.kewl.cashdy.ui.components.Hint
 import de.kewl.cashdy.ui.components.Mascot
 import de.kewl.cashdy.ui.components.Mood
@@ -258,7 +259,7 @@ fun HomeScreen() {
 
         // Die Rechnung dahinter, in vier Zeilen.
         Group {
-            IncomeRows(sum, d.settings.startDay, d.settings.cashMode == CashMode.WALLET, onClick = { ui.go(Route.Fixed) })
+            IncomeRows(sum, d.settings.startDay, d.settings.cashMode == CashMode.WALLET, onClick = { ui.go(Route.Fixed) }, compact = true)
             GroupDivider()
             ValueRow("Fest", "− " + Money.format(sum.fixed), onClick = { ui.go(Route.Fixed) })
             if (sum.reserve > 0) {
@@ -267,7 +268,7 @@ fun HomeScreen() {
             }
             GroupDivider()
             ValueRow(
-                "Ausgegeben", "− " + Money.format(sum.spent),
+                "Ausgegeben", spentLabel(sum.spent),
                 note = if (sum.planned > 0) "davon ${Money.format(sum.planned)} vorgemerkt" else null,
                 onClick = { ui.go(Route.MonthDetail()) },
             )

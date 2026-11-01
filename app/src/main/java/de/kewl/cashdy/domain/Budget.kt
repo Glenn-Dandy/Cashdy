@@ -55,13 +55,18 @@ object Budget {
     fun spendingValue(e: Entry, cashMode: CashMode): Cents = when (e.kind) {
         EntryKind.EXPENSE -> e.amount
         EntryKind.REFUND -> -e.amount
-        EntryKind.CASH_ADJUST -> if (cashMode == CashMode.WALLET) e.amount else 0
+        // Mehr Bargeld als gedacht ist keine "negative Ausgabe", das zählt als Einnahme, siehe [cashFound].
+        EntryKind.CASH_ADJUST -> if (cashMode == CashMode.WALLET) e.amount.coerceAtLeast(0) else 0
         EntryKind.CASH_WITHDRAWAL -> if (cashMode == CashMode.SIMPLE) e.amount else 0
         // Im Einfach-Modus ist Bargeld mit dem Abheben schon "ausgegeben".
         EntryKind.INCOME, EntryKind.CASH_START, EntryKind.SAVING -> 0
     }.let { v ->
         if (cashMode == CashMode.SIMPLE && e.kind == EntryKind.EXPENSE && e.method == PayMethod.CASH) 0 else v
     }
+
+    /** Gefundenes Bargeld (Abgleich mit mehr Bargeld als gedacht), zählt wie eine Einnahme. */
+    fun cashFound(e: Entry, cashMode: CashMode): Cents =
+        if (e.kind == EntryKind.CASH_ADJUST && cashMode == CashMode.WALLET && e.amount < 0) -e.amount else 0
 
     /**
      * Was übrig bleibt, geht in den nächsten Monat mit, sonst wäre der Rest am Monatsende einfach
@@ -133,7 +138,8 @@ object Budget {
         val entries = d.entries.filter { it.date in p }.sortedWith(compareByDescending<Entry> { it.date }.thenByDescending { it.createdAt })
         // Nachgetragenes von vor dem Start ist im Kontostand schon abgezogen.
         val counted = if (startDay == null) entries else entries.filter { !it.date.isBefore(startDay) }
-        val oneOffIncome = counted.filter { it.kind == EntryKind.INCOME }.sumOf { it.amount }
+        val oneOffIncome = counted.filter { it.kind == EntryKind.INCOME }.sumOf { it.amount } +
+            counted.sumOf { cashFound(it, s.cashMode) }
         val spent = counted.sumOf { spendingValue(it, s.cashMode) }
         val saved = counted.filter { it.kind == EntryKind.SAVING }.sumOf { it.amount }
         val planned = counted.filter { it.date.isAfter(today) }.sumOf { spendingValue(it, s.cashMode) }.coerceAtLeast(0)
