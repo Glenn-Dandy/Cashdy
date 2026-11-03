@@ -226,6 +226,19 @@ object Detection {
         return out to entry
     }
 
+    /**
+     * Falsch erkannt: Ausgabe (oder Erstattung) wird Einnahme, Einnahme wird Ausgabe.
+     * Jede Bank schreibt ihre Meldungen anders, die Erkennung liegt nicht immer richtig.
+     */
+    fun flip(d: AppData, detectedId: String): AppData = d.copy(detected = d.detected.map {
+        if (it.id != detectedId || it.status != DetectedStatus.PENDING) it
+        else when (it.kind) {
+            DetectedKind.EXPENSE, DetectedKind.REFUND -> it.copy(kind = DetectedKind.INCOME)
+            DetectedKind.INCOME -> it.copy(kind = DetectedKind.EXPENSE)
+            DetectedKind.CASH -> it
+        }
+    })
+
     fun ignore(d: AppData, detectedId: String): AppData =
         d.copy(detected = d.detected.map { if (it.id == detectedId) it.copy(status = DetectedStatus.IGNORED) else it })
 

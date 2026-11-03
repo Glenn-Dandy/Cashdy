@@ -172,16 +172,25 @@ private fun DetectedCard(det: Detected, expanded: Boolean) {
             }
         }
         Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (det.kind == DetectedKind.EXPENSE || det.kind == DetectedKind.INCOME) {
-                Text(
-                    if (det.kind == DetectedKind.INCOME) "Ist feste Einnahme" else "Ist Fixkosten",
-                    Modifier.clip(RoundedCornerShape(50)).clickable {
-                        ui.go(Route.RecurringEdit(null, income = det.kind == DetectedKind.INCOME, fromDetected = det.id))
-                    }.padding(8.dp),
-                    style = MaterialTheme.typography.labelLarge, color = c.primary,
-                )
+            FlowRow(Modifier.weight(1f)) {
+                if (det.kind == DetectedKind.EXPENSE || det.kind == DetectedKind.INCOME) {
+                    Text(
+                        if (det.kind == DetectedKind.INCOME) "Ist feste Einnahme" else "Ist Fixkosten",
+                        Modifier.clip(RoundedCornerShape(50)).clickable {
+                            ui.go(Route.RecurringEdit(null, income = det.kind == DetectedKind.INCOME, fromDetected = det.id))
+                        }.padding(8.dp),
+                        style = MaterialTheme.typography.labelLarge, color = c.primary,
+                    )
+                }
+                // Falsch erkannt? Mit einem Tipp umdrehen.
+                if (det.kind != DetectedKind.CASH) {
+                    Text(
+                        if (det.kind == DetectedKind.INCOME) "Ist eine Ausgabe" else "Ist eine Einnahme",
+                        Modifier.clip(RoundedCornerShape(50)).clickable { Store.update { Detection.flip(it, det.id) } }.padding(8.dp),
+                        style = MaterialTheme.typography.labelLarge, color = c.primary,
+                    )
+                }
             }
-            Spacer(Modifier.weight(1f))
             Text("Nö, ignorieren", Modifier.clip(RoundedCornerShape(50)).clickable {
                 Store.update { Detection.ignore(it, det.id) }; done("Ignoriert")
             }.padding(8.dp), style = MaterialTheme.typography.labelLarge, color = c.muted)

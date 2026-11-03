@@ -6,3 +6,4 @@
 - Bargeld gefunden: Ein Bargeld-Abgleich mit mehr Bargeld als gedacht zählt jetzt als Einnahme, nicht mehr als „negative Ausgabe“. In der Liste heißt er „Bargeld gefunden“. Fehlendes Bargeld bleibt eine Ausgabe
 - Startseite: Der Übertrag aus dem Vormonat steckt mit in „Einnahmen“, eine Zahl weniger. Aufgeschlüsselt steht er in der Monatsansicht
 - „Ausgegeben“ zeigt „+ 12,00 €“, wenn Erstattungen überwiegen, statt „− −12,00 €“
+- Eingang: Falsch erkannte Zahlungen lassen sich umdrehen. Unter jeder Ausgabe steht „Ist eine Einnahme“, unter jeder Einnahme „Ist eine Ausgabe“

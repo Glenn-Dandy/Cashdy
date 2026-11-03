@@ -1,6 +1,7 @@
 package de.kewl.cashdy
 
 import de.kewl.cashdy.data.AppData
+import de.kewl.cashdy.data.DetectedKind
 import de.kewl.cashdy.data.DetectedStatus
 import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.data.PriceStep
@@ -142,5 +143,20 @@ class DetectionTest {
         val (d2, r2) = Detection.handle(d1, wallet, "Sonderpreis Baumarkt", "10,33 € mit Visa Debitkarte ••2555", t0 + 30_000)
         assertTrue(r2 is DetectionResult.Merged)
         assertEquals("Sonderpreis Baumarkt", d2.detected.first { it.id == r1.detected.id }.merchant)
+    }
+
+    @Test fun wronglyDetectedPaymentCanBeFlipped() {
+        val (d1, r) = Detection.handle(AppData(), paypal, "", "Du hast eine Zahlung in Höhe von 12,49 € an REWE autorisiert.", t0)
+        r as DetectionResult.Pending
+        val d2 = Detection.flip(d1, r.detected.id)
+        val (d3, e) = Detection.accept(d2, r.detected.id, null)
+        assertEquals(EntryKind.INCOME, e!!.kind)
+        assertEquals(1_249L, e.amount)
+        // Eine Einnahme lernt keine Ausgaben-Kategorie.
+        assertEquals(null, d3.merchantRules["rewe"])
+        // Erledigte Meldungen bleiben, wie sie sind.
+        assertEquals(d3.detected, Detection.flip(d3, r.detected.id).detected)
+        // Und zurück.
+        assertEquals(DetectedKind.EXPENSE, Detection.flip(d2, r.detected.id).detected.first().kind)
     }
 }
