@@ -1,0 +1,6 @@
+Cashdy 1.1.1: Übertrag und bessere Erkennung
+
+- Was am Monatsende übrig ist, geht in den nächsten Monat mit.
+- Gefundenes Bargeld zählt als Einnahme.
+- Falsch erkannte Zahlungen lassen sich zwischen Einnahme und Ausgabe umdrehen.
+- Eingänge mit Plus und abgelehnte Zahlungen werden richtig erkannt.

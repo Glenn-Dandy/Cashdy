@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.1
+
+Cashdy 1.1.1: Übertrag in den nächsten Monat und bessere Erkennung.
+
+- **Übertrag:** Was am Monatsende übrig ist (oder drüber), geht in den nächsten Monat mit. Wer den Rest aufs Sparkonto legt, rutscht im neuen Monat nicht mehr ins Minus. Gilt ab dem Start mit Kontostand. Auf der Startseite steckt der Übertrag in „Einnahmen“, aufgeschlüsselt steht er in der Monatsansicht. Die Statistik zeigt weiter das Ergebnis jedes Monats für sich.
+- **Bargeld gefunden:** Ein Bargeld-Abgleich mit mehr Bargeld als gedacht zählt jetzt als Einnahme, nicht mehr als „negative Ausgabe“. In der Liste heißt er „Bargeld gefunden“. Fehlendes Bargeld bleibt eine Ausgabe.
+- **Erkannte Zahlungen umdrehen:** Unter jeder erkannten Ausgabe steht „Ist eine Einnahme“, unter jeder Einnahme „Ist eine Ausgabe“.
+- **Erkennung:** DKB-Meldungen mit Plus („+12,90 Euro von …“) und PayPal „Du hast erhalten“ sind jetzt Eingänge statt Ausgaben. „Zahlung abgelehnt“ wird nicht mehr als Ausgabe übernommen.
+- **Ausgegeben** zeigt „+ 12,00 €“, wenn Erstattungen überwiegen, statt „− −12,00 €“.
+
 ## 1.1.0
 
 Cashdy 1.1.0: ohne Google-Bibliotheken, bereit für F-Droid.

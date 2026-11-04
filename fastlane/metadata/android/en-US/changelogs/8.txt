@@ -1,0 +1,6 @@
+Cashdy 1.1.1: carry over and better detection
+
+- What is left at the end of the month carries over into the next one.
+- Found cash counts as income.
+- Wrongly detected payments can be flipped between income and expense.
+- Incoming payments with a plus and declined payments are detected correctly.
