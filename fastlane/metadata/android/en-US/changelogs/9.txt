@@ -1,0 +1,6 @@
+Cashdy 1.1.2: tidier fixed costs and less text
+
+- Categories in alphabetical order, plus a sort button on "Fixed".
+- Cancelled items have their own box and the cancellation can be undone.
+- The first price moves along when the first due date is moved.
+- Hints and help are much shorter.

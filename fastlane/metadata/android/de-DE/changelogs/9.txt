@@ -1,0 +1,6 @@
+Cashdy 1.1.2: Ordnung auf „Fest“ und weniger Text
+
+- Kategorien alphabetisch, dazu ein Sortierknopf auf „Fest“.
+- Gekündigte Posten stehen in einem eigenen Kasten und lassen sich zurücknehmen.
+- Der erste Preis wandert mit, wenn die erste Fälligkeit verschoben wird.
+- Hinweise und Hilfe sind deutlich kürzer.

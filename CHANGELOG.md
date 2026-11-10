@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2
+
+Cashdy 1.1.2: Ordnung auf „Fest“ und weniger Text.
+
+- **Sortierung:** Kategorien stehen alphabetisch, unter Mehr › Kategorien, auf „Fest“ und bei der Kategorie-Auswahl für Fixkosten. Auf „Fest“ gibt es neben der Suche einen Sortierknopf: „A bis Z“, „Teuerste zuerst“ oder „Günstigste zuerst“. Cashdy merkt sich die Wahl.
+- **Gekündigt:** Gekündigte Posten stehen sofort unten in einem eigenen Kasten. Antippen öffnet sie, dort gibt es „Kündigung zurücknehmen“. Läuft ein Vertrag nach der Kündigung noch, bleibt er bis zum Ende in seiner Kategorie, mit „gekündigt zum …“.
+- **Erste Fälligkeit verschoben:** Der erste Preis im Preisverlauf zieht mit, solange noch nichts abgerechnet ist.
+- **Weniger Text:** Hinweise, Hilfe und Einrichtung sind deutlich kürzer. Der Hinweis zum Löschen von Fixkosten erscheint erst, wenn du wirklich löschen willst.
+
 ## 1.1.1
 
 Cashdy 1.1.1: Übertrag in den nächsten Monat und bessere Erkennung.
