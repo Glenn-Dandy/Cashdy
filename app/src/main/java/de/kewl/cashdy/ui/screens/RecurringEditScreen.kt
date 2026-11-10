@@ -1,5 +1,6 @@
 package de.kewl.cashdy.ui.screens
 
+import de.kewl.cashdy.domain.Sorting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.heightIn
@@ -42,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import de.kewl.cashdy.data.Category
 import de.kewl.cashdy.data.CategoryType
 import de.kewl.cashdy.data.DefaultCategories
 import de.kewl.cashdy.data.PriceStep
@@ -167,7 +169,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean, fromDetected: Strin
         SectionTitle("Kategorie")
         val cats = d.categories.filter { it.type == if (income) CategoryType.INCOME else CategoryType.EXPENSE }
             .filter { it.id != DefaultCategories.CASH_UNKNOWN }
-            .sortedByDescending { it.fixed }
+            .sortedWith(compareByDescending<Category> { it.fixed }.then(Sorting.byName { it.name }))
         val cat = cats.firstOrNull { it.id == categoryId }
         CategoryDropdown(cats, { categoryId = it.id }, Modifier.fillMaxWidth()) { open ->
             Row(

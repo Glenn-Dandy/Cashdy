@@ -4,6 +4,7 @@ import de.kewl.cashdy.data.PeriodMode
 import de.kewl.cashdy.data.Settings
 import de.kewl.cashdy.domain.Money
 import de.kewl.cashdy.domain.Periods
+import de.kewl.cashdy.domain.Sorting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -84,5 +85,13 @@ class MoneyAndPeriodsTest {
         val early = Periods.periodFor(LocalDate.of(2026, 8, 10), s)
         assertEquals(LocalDate.of(2026, 7, 27), early.start)
         assertEquals(LocalDate.of(2026, 8, 26), early.end)
+    }
+
+    @Test fun germanAlphabeticalOrder() {
+        val names = listOf("Wohnen", "Abos & Streaming", "Ärzte", "auto", "Versicherungen", "Handy & Internet")
+        assertEquals(
+            listOf("Abos & Streaming", "Ärzte", "auto", "Handy & Internet", "Versicherungen", "Wohnen"),
+            names.sortedWith(Sorting.german),
+        )
     }
 }

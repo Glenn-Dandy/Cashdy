@@ -1,5 +1,6 @@
 package de.kewl.cashdy.ui.screens
 
+import de.kewl.cashdy.domain.Sorting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -68,7 +69,7 @@ fun CategoriesScreen() {
         }
         listOf(CategoryType.EXPENSE to "Ausgaben", CategoryType.INCOME to "Einnahmen").forEach { (type, title) ->
             SectionTitle(title)
-            d.categories.filter { it.type == type }.forEach { cat ->
+            d.categories.filter { it.type == type }.sortedWith(Sorting.byName { it.name }).forEach { cat ->
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(c.surface).clickable { edit = cat }.padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),

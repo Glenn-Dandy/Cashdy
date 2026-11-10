@@ -138,6 +138,10 @@ enum class CashMode { WALLET, SIMPLE }
 @Serializable
 enum class FixedView { CATEGORY, NAME, DUE }
 
+/** Reihenfolge auf "Fest" (Kategorien und Posten): A bis Z, teuerste oder günstigste zuerst. */
+@Serializable
+enum class FixedSort { NAME, PRICE_DOWN, PRICE_UP }
+
 /** Einträge auf "Monat": nach Kategorie zusammengefasst oder nach Tag. */
 @Serializable
 enum class MonthView { CATEGORY, DAY }
@@ -190,6 +194,7 @@ data class Settings(
     val bankCheck: BankCheck? = null,
     /** Zuletzt gewählte Ansichten, damit sie beim nächsten Öffnen wieder so sind. */
     val fixedView: FixedView = FixedView.CATEGORY,
+    val fixedSort: FixedSort = FixedSort.NAME,
     /** Statistik: true = ganzes Jahr, false = die letzten 6 Monate. */
     val statsYear: Boolean = false,
     val monthView: MonthView = MonthView.CATEGORY,

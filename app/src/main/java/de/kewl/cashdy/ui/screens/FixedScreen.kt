@@ -1,5 +1,8 @@
 package de.kewl.cashdy.ui.screens
 
+import de.kewl.cashdy.data.FixedSort
+import de.kewl.cashdy.domain.Sorting
+import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +72,8 @@ fun FixedScreen() {
     val today = LocalDate.now()
     val c = C.colors
     val view = d.settings.fixedView
+    val sort = d.settings.fixedSort
+    var sortMenu by remember { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     val open = remember { mutableStateMapOf<String, Boolean>() }
     var addMenu by remember { mutableStateOf(false) }
@@ -82,6 +87,12 @@ fun FixedScreen() {
     val pots = remember(d, today) { Reserve.all(d, today).associateBy { it.recurring.id } }
     fun perMonth(r: Recurring): Cents =
         if (r.spread && r.intervalMonths > 1) Recurrence.monthlyShare(r, today) else Recurrence.currentPrice(r, today) / r.intervalMonths
+    // Ohne Kategorie bleibt immer unten.
+    val byItem: Comparator<Recurring> = when (sort) {
+        FixedSort.NAME -> Sorting.byName { it.name }
+        FixedSort.PRICE_DOWN -> compareByDescending(::perMonth)
+        FixedSort.PRICE_UP -> compareBy(::perMonth)
+    }
     val costsMonth = costs.sumOf(::perMonth)
     val potMonth = costs.filter { it.spread && it.intervalMonths > 1 }.sumOf(::perMonth)
     val row: @Composable (Recurring) -> Unit = { r ->
@@ -138,7 +149,24 @@ fun FixedScreen() {
         if (d.recurring.isEmpty()) {
             Hint("Hier kommen Miete, Handy, Netflix, Versicherungen und dein Gehalt rein. Einmal eintragen, ich rechne jeden Monat automatisch mit. Tipp oben auf Plus.")
         } else {
-            SearchField(query, { query = it }, "Name oder Kategorie suchen")
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SearchField(query, { query = it }, "Name oder Kategorie suchen", Modifier.weight(1f))
+                // Nach Fälligkeit ist die Reihenfolge schon das Datum.
+                if (view != FixedView.DUE) Box {
+                    Box(
+                        Modifier.size(48.dp).clip(CircleShape).background(c.surface).clickable { sortMenu = true },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.AutoMirrored.Rounded.Sort, "Sortieren", tint = c.fg) }
+                    DropdownMenu(sortMenu, { sortMenu = false }, containerColor = c.surface) {
+                        listOf(FixedSort.NAME to "A bis Z", FixedSort.PRICE_DOWN to "Teuerste zuerst", FixedSort.PRICE_UP to "Günstigste zuerst").forEach { (s, label) ->
+                            DropdownMenuItem(
+                                { Text(label + if (s == sort) "  ✓" else "", style = RowTitle, color = c.fg) },
+                                { sortMenu = false; Store.update { it.copy(settings = it.settings.copy(fixedSort = s)) } },
+                            )
+                        }
+                    }
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(FixedView.CATEGORY to "Kategorie", FixedView.NAME to "Name", FixedView.DUE to "Fällig").forEach { (v, label) ->
                     Pill(label, view == v, { Store.update { it.copy(settings = it.settings.copy(fixedView = v)) } })
@@ -155,7 +183,15 @@ fun FixedScreen() {
                 FixedView.CATEGORY -> {
                     val groups = costs.groupBy { it.categoryId?.takeIf { id -> d.category(id) != null } }
                         .map { (cat, rs) -> Triple(cat, rs, rs.sumOf(::perMonth)) }
-                        .sortedWith(compareBy<Triple<String?, List<Recurring>, Cents>> { it.first == null }.thenByDescending { it.third })
+                        .sortedWith(
+                            compareBy<Triple<String?, List<Recurring>, Cents>> { it.first == null }.then(
+                                when (sort) {
+                                    FixedSort.NAME -> Sorting.byName { d.category(it.first)?.name ?: NO_CATEGORY }
+                                    FixedSort.PRICE_DOWN -> compareByDescending { it.third }
+                                    FixedSort.PRICE_UP -> compareBy { it.third }
+                                }
+                            )
+                        )
                     Group {
                         groups.forEachIndexed { i, (cat, rs, sum) ->
                             if (i > 0) GroupDivider()
@@ -166,14 +202,14 @@ fun FixedScreen() {
                             ) { toggle(key) }
                             AnimatedVisibility(isOpen(key)) {
                                 FoldChildren {
-                                    rs.sortedByDescending(::perMonth).forEachIndexed { j, r -> if (j > 0) GroupDivider(); row(r) }
+                                    rs.sortedWith(byItem).forEachIndexed { j, r -> if (j > 0) GroupDivider(); row(r) }
                                 }
                             }
                         }
                     }
                 }
                 FixedView.NAME -> Group {
-                    costs.sortedBy { it.name.lowercase() }.forEachIndexed { i, r -> if (i > 0) GroupDivider(); row(r) }
+                    costs.sortedWith(byItem).forEachIndexed { i, r -> if (i > 0) GroupDivider(); row(r) }
                 }
                 FixedView.DUE -> Group {
                     costs.sortedBy { Recurrence.nextDue(it, today) ?: LocalDate.MAX }.forEachIndexed { i, r -> if (i > 0) GroupDivider(); row(r) }
@@ -186,7 +222,7 @@ fun FixedScreen() {
                 if (incomes.isNotEmpty()) {
                     FoldRow("Einnahmen", Money.format(incomes.sumOf(::perMonth)), isOpen("in"), valueColor = c.good, note = "pro Monat") { toggle("in") }
                     AnimatedVisibility(isOpen("in")) {
-                        FoldChildren { incomes.sortedByDescending(::perMonth).forEachIndexed { j, r -> if (j > 0) GroupDivider(); row(r) } }
+                        FoldChildren { incomes.sortedWith(byItem).forEachIndexed { j, r -> if (j > 0) GroupDivider(); row(r) } }
                     }
                 }
                 if (ended.isNotEmpty()) {
