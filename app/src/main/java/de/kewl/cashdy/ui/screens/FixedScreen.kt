@@ -80,7 +80,8 @@ fun FixedScreen() {
 
     val q = query.trim()
     fun matches(r: Recurring) = q.isEmpty() || r.name.contains(q, true) || (d.category(r.categoryId)?.name ?: NO_CATEGORY).contains(q, true)
-    val active = d.recurring.filter { it.endDate == null || !it.endDate.isBefore(today) }
+    // Gekündigt ab heute heißt: schon heute unten bei „Gekündigt“. Läuft ein Vertrag noch, bleibt er bis zum Ende oben.
+    val active = d.recurring.filter { it.endDate == null || it.endDate.isAfter(today) }
     val ended = (d.recurring - active.toSet()).filter(::matches)
     val incomes = active.filter { it.income && matches(it) }
     val costs = active.filter { !it.income && matches(it) }
@@ -217,20 +218,19 @@ fun FixedScreen() {
             }
         }
 
-        if (incomes.isNotEmpty() || ended.isNotEmpty()) {
+        if (incomes.isNotEmpty()) {
             Group {
-                if (incomes.isNotEmpty()) {
-                    FoldRow("Einnahmen", Money.format(incomes.sumOf(::perMonth)), isOpen("in"), valueColor = c.good, note = "pro Monat") { toggle("in") }
-                    AnimatedVisibility(isOpen("in")) {
-                        FoldChildren { incomes.sortedWith(byItem).forEachIndexed { j, r -> if (j > 0) GroupDivider(); row(r) } }
-                    }
+                FoldRow("Einnahmen", Money.format(incomes.sumOf(::perMonth)), isOpen("in"), valueColor = c.good, note = "pro Monat") { toggle("in") }
+                AnimatedVisibility(isOpen("in")) {
+                    FoldChildren { incomes.sortedWith(byItem).forEachIndexed { j, r -> if (j > 0) GroupDivider(); row(r) } }
                 }
-                if (ended.isNotEmpty()) {
-                    if (incomes.isNotEmpty()) GroupDivider()
-                    FoldRow("Beendet", "${ended.size}", isOpen("end"), valueColor = c.muted) { toggle("end") }
-                    AnimatedVisibility(isOpen("end")) {
-                        FoldChildren { ended.sortedByDescending { it.endDate }.forEachIndexed { j, r -> if (j > 0) GroupDivider(); RecurringRow(r, today) { ui.go(Route.RecurringEdit(r.id, r.income)) } } }
-                    }
+            }
+        }
+        if (ended.isNotEmpty()) {
+            Group {
+                FoldRow("Gekündigt", "${ended.size}", isOpen("end"), valueColor = c.muted, note = "Antippen zum Ansehen oder Zurücknehmen") { toggle("end") }
+                AnimatedVisibility(isOpen("end")) {
+                    FoldChildren { ended.sortedByDescending { it.endDate }.forEachIndexed { j, r -> if (j > 0) GroupDivider(); RecurringRow(r, today) { ui.go(Route.RecurringEdit(r.id, r.income)) } } }
                 }
             }
         }
@@ -250,9 +250,17 @@ private fun RecurringRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(r.name, style = ItemTitle, color = c.fg)
+            val end = r.endDate?.let { e ->
+                when {
+                    Recurrence.isLoan(r) -> "abbezahlt ${shortDate(e)}"
+                    r.income -> (if (e.isAfter(today)) "endet am " else "beendet am ") + shortDate(e)
+                    else -> "gekündigt zum ${shortDate(e)}"
+                }
+            }
             val parts = listOfNotNull(
                 Recurrence.intervalLabel(r.intervalMonths),
-                next?.let { "nächste ${shortDate(it)}" } ?: r.endDate?.let { "bis ${shortDate(it)}" },
+                next?.let { "nächste ${shortDate(it)}" },
+                end,
             )
             Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = c.muted)
             Recurrence.changeHint(r, today)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.warn) }

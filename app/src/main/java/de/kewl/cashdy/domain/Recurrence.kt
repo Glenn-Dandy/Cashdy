@@ -49,6 +49,21 @@ object Recurrence {
 
     fun currentPrice(r: Recurring, today: LocalDate = LocalDate.now()) = priceAt(r, today)
 
+    /**
+     * Der erste Preis gilt ab der ersten Fälligkeit. Wird die nach vorn gelegt, zieht er immer mit.
+     * Wird sie nach hinten verschoben, zieht er nur mit, solange noch nichts abgerechnet ist
+     * (erster Preis liegt in der Zukunft). Was schon war, bleibt Geschichte. Spätere Preisschritte
+     * bleiben, wie sie sind.
+     */
+    fun alignFirstPrice(prices: List<PriceStep>, oldFirstDue: LocalDate?, newFirstDue: LocalDate, today: LocalDate): List<PriceStep> {
+        val sorted = prices.sortedBy { it.from }
+        val first = sorted.firstOrNull() ?: return sorted
+        val move = first.from.isAfter(newFirstDue) ||
+            (oldFirstDue != null && newFirstDue.isAfter(oldFirstDue) && first.from == oldFirstDue && first.from.isAfter(today) &&
+                sorted.getOrNull(1)?.from?.isAfter(newFirstDue) != false)
+        return if (move) listOf(first.copy(from = newFirstDue)) + sorted.drop(1) else sorted
+    }
+
     /** Alle Fälligkeiten im Bereich [from]..[to]. Basis ist immer firstDue, damit der 31. nicht wandert. */
     fun dueDates(r: Recurring, from: LocalDate, to: LocalDate): List<LocalDate> {
         if (r.intervalMonths <= 0) return emptyList()

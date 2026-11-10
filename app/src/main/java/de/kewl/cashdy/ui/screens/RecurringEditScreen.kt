@@ -218,9 +218,8 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean, fromDetected: Strin
                 existing == null -> listOf(PriceStep(firstDue, cents!!))
                 prices.size <= 1 -> listOf(PriceStep(prices.firstOrNull()?.from ?: firstDue, cents ?: prices.first().amount))
                 else -> prices
-            }.sortedBy { it.from }
-            // Der erste Preis gilt ab der ersten Fälligkeit, auch wenn die nachträglich früher gelegt wurde.
-            val fixedFirst = finalPrices.mapIndexed { i, p -> if (i == 0 && p.from.isAfter(firstDue)) p.copy(from = firstDue) else p }
+            }
+            val fixedFirst = Recurrence.alignFirstPrice(finalPrices, existing?.firstDue, firstDue, today)
             val r = Recurring(
                 id = existing?.id ?: Store.newId(), name = name.trim(), categoryId = categoryId, income = income,
                 intervalMonths = interval, firstDue = firstDue, endDate = endDate,
@@ -246,6 +245,10 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean, fromDetected: Strin
                 if (existing.endDate == null || (Recurrence.isLoan(existing) && existing.endDate.isAfter(today))) TextButtonSoft(if (Recurrence.isLoan(existing)) "Schon abbezahlt" else "Gekündigt ab heute", {
                     Store.update { data -> data.copy(recurring = data.recurring.map { if (it.id == existing.id) it.copy(endDate = today) else it }) }
                     ui.say(if (Recurrence.isLoan(existing)) "Abbezahlt, super!" else "Beendet. Ab jetzt rechne ich es nicht mehr mit."); ui.back()
+                })
+                if (existing.endDate != null && !Recurrence.isLoan(existing)) TextButtonSoft(if (existing.income) "Läuft doch weiter" else "Kündigung zurücknehmen", {
+                    Store.update { data -> data.copy(recurring = data.recurring.map { if (it.id == existing.id) it.copy(endDate = null) else it }) }
+                    ui.say("Läuft wieder. Ich rechne es wieder mit."); ui.back()
                 })
                 TextButtonSoft(if (confirmDelete) "Wirklich löschen?" else "Löschen", {
                     if (!confirmDelete) confirmDelete = true else {

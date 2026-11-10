@@ -372,4 +372,20 @@ class BudgetTest {
         assertEquals(300_000L, simple.income)
         assertEquals(2_000L, simple.spent)
     }
+
+    @Test fun firstPriceFollowsFirstDueUntilBilled() {
+        val today = d(2026, 11, 10)
+        val one = listOf(PriceStep(d(2027, 1, 1), 4_000))
+        // Noch nicht abgerechnet: verschoben auf 1.3., der Preis zieht mit.
+        assertEquals(listOf(PriceStep(d(2027, 3, 1), 4_000)), Recurrence.alignFirstPrice(one, d(2027, 1, 1), d(2027, 3, 1), today))
+        // Schon abgerechnet: bleibt stehen.
+        val past = listOf(PriceStep(d(2026, 1, 1), 4_000))
+        assertEquals(past, Recurrence.alignFirstPrice(past, d(2026, 1, 1), d(2026, 3, 1), today))
+        // Nach vorn gelegt: zieht immer mit.
+        assertEquals(listOf(PriceStep(d(2025, 12, 1), 4_000)), Recurrence.alignFirstPrice(past, d(2026, 1, 1), d(2025, 12, 1), today))
+        // Spätere Preisschritte bleiben, und der erste springt nie über sie hinweg.
+        val two = listOf(PriceStep(d(2027, 1, 1), 4_000), PriceStep(d(2027, 6, 1), 4_500))
+        assertEquals(listOf(PriceStep(d(2027, 3, 1), 4_000), PriceStep(d(2027, 6, 1), 4_500)), Recurrence.alignFirstPrice(two, d(2027, 1, 1), d(2027, 3, 1), today))
+        assertEquals(two, Recurrence.alignFirstPrice(two, d(2027, 1, 1), d(2027, 7, 1), today))
+    }
 }
