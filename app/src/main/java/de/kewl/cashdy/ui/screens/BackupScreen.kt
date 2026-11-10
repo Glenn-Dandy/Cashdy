@@ -72,7 +72,7 @@ fun BackupScreen() {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         ScreenHeader("Sicherung", onBack = { ui.back() })
-        Hint("Deine Daten liegen nur auf diesem Handy. Mach ab und zu eine Sicherung, damit beim Handywechsel nichts verloren geht. Kassenbon-Fotos sind nicht enthalten.")
+        Hint("Deine Daten liegen nur auf diesem Handy. Ab und zu sichern, dann geht beim Handywechsel nichts verloren.")
 
         SectionTitle("Als Datei")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -85,7 +85,7 @@ fun BackupScreen() {
             var url by remember { mutableStateOf(s.webdavUrl) }
             var user by remember { mutableStateOf(s.webdavUser) }
             var pass by remember { mutableStateOf(s.webdavPass) }
-            Hint("Adresse des Ordners, z. B. https://cloud.example.de/remote.php/dav/files/NAME/Cashdy. Den Ordner vorher in der Nextcloud anlegen. Am besten ein App-Passwort nutzen (Nextcloud: Einstellungen › Sicherheit).")
+            Hint("Ordner-Adresse, z. B. https://cloud.example.de/remote.php/dav/files/NAME/Cashdy. Ordner vorher anlegen, am besten mit App-Passwort.")
             Spacer(Modifier.height(6.dp))
             SoftField(url, { url = it; setSettings { st -> st.copy(webdavUrl = it.trim()) } }, "WebDAV-Adresse", keyboard = KeyboardType.Uri)
             Spacer(Modifier.height(6.dp))

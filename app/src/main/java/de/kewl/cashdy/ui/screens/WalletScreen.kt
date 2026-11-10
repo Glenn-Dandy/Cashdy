@@ -77,7 +77,7 @@ fun WalletScreen() {
             Pill("Bar bezahlt", false, { ui.openAdd(AddRequest(method = PayMethod.CASH)) })
             Pill("Abgleich", false, { check = true })
         }
-        Hint("Abheben ist keine Ausgabe, das Geld wandert nur ins Portemonnaie. Ausgegeben ist es erst, wenn du bar bezahlst. Keine Lust, jeden Kaugummi einzutragen? Mach ab und zu einen Abgleich, den Rest buche ich als „Bargeld, nicht zugeordnet“.")
+        Hint("Abheben füllt das Portemonnaie, bar bezahlen leert es. Ab und zu abgleichen reicht.")
 
         val cashEntries = d.entries.filter {
             it.kind in setOf(EntryKind.CASH_WITHDRAWAL, EntryKind.CASH_ADJUST, EntryKind.CASH_START) ||

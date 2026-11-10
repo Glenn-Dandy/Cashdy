@@ -184,11 +184,9 @@ fun OnboardingScreen(onDone: () -> Unit) {
                         Hint(
                             "Damit dein erster Monat gleich stimmt, rechne ich bis " +
                                 monthStartShort(mode, monthDay) +
-                                " mit diesem Betrag. " +
-                                "Was bis heute abgebucht wurde oder reinkam, steckt schon darin. Was danach noch kommt, Gehalt oder Fixkosten, " +
-                                "rechne ich dazu oder ab. Darum ist bei den Fixkosten der Abbuchungstag wichtig."
+                                " mit diesem Betrag. Was danach noch abgeht oder reinkommt, rechne ich dazu."
                         )
-                        Hint("Ab dem nächsten Monat rechne ich ganz normal mit deinem Gehalt. Leer lassen geht auch, dann zählt schon jetzt das ganze Gehalt.")
+                        Hint("Leer lassen geht auch, dann zählt schon jetzt das ganze Gehalt.")
                     }
                     3 -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,7 +209,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                                 Text(Money.format(f.amount) + if (f.months > 1) " / ${f.months} Mon." else "", style = MaterialTheme.typography.bodyLarge, color = c.muted)
                             }
                         }
-                        Hint("Später kannst du unter „Fest“ einen Kontoauszug (CSV) einlesen, dann finde ich alles Regelmäßige von selbst.")
+                        Hint("Später geht auch: Kontoauszug (CSV) unter „Fest“ einlesen.")
                     }
                     4 -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -221,7 +219,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                         }
                         Card(color = if (cashMode == CashMode.WALLET) c.soft2 else c.surface, onClick = { cashMode = CashMode.WALLET }) {
                             Text("👛 Portemonnaie führen", style = MaterialTheme.typography.titleMedium, color = c.fg)
-                            Hint("Abheben füllt dein Portemonnaie, Barzahlungen leeren es. Ab und zu fragst du mich nach einem Abgleich. Genau, aber trotzdem locker.")
+                            Hint("Abheben füllt dein Portemonnaie, Barzahlungen leeren es.")
                         }
                         Card(color = if (cashMode == CashMode.SIMPLE) c.soft2 else c.surface, onClick = { cashMode = CashMode.SIMPLE }) {
                             Text("🤷 Einfach-Modus", style = MaterialTheme.typography.titleMedium, color = c.fg)
@@ -234,14 +232,14 @@ fun OnboardingScreen(onDone: () -> Unit) {
                         Text("Fast fertig! ✨", style = MaterialTheme.typography.headlineMedium, color = c.fg)
                         Card {
                             Text("🔔 Erinnerungen", style = MaterialTheme.typography.titleMedium, color = c.fg)
-                            Hint("Ich sag Bescheid, wenn etwas fällig wird oder du lange nichts eingetragen hast. Versprochen: nicht nervig.")
+                            Hint("Ich sag Bescheid, wenn etwas fällig wird oder du lange nichts eingetragen hast.")
                             TextButtonSoft(if (Notify.canPost(ctx)) "✓ Erlaubt" else "Erlauben", {
                                 if (Build.VERSION.SDK_INT >= 33) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
                             })
                         }
                         Card {
                             Text("✨ Zahlungen automatisch erkennen", style = MaterialTheme.typography.titleMedium, color = c.fg)
-                            Hint("Wenn PayPal, DKB oder Google Wallet eine Zahlung melden, schlage ich sie dir vor. Ein Tipp, fertig. Ich lese nur diese Apps, nichts verlässt dein Handy.")
+                            Hint("Wenn PayPal, DKB oder Google Wallet eine Zahlung melden, schlage ich sie dir vor. Nichts verlässt dein Handy.")
                             TextButtonSoft(if (listenerOn) "✓ Aktiv" else "Zugriff erlauben", { openListenerSettings(ctx) })
                         }
                     }

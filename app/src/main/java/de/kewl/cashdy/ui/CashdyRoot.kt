@@ -180,7 +180,7 @@ fun CashdyRoot(ui: Ui) {
             AlertDialog(
                 onDismissRequest = { ui.scanChooser = false },
                 title = { Text("Kassenbon") },
-                text = { Text("Fotografier den Bon, ich lese Summe, Laden und Datum raus. Alles bleibt auf deinem Handy.") },
+                text = { Text("Ich lese Summe, Laden und Datum. Alles bleibt auf dem Handy.") },
                 confirmButton = { TextButton(onClick = { ui.scanChooser = false; startCamera() }) { Text("Foto machen") } },
                 dismissButton = {
                     TextButton(onClick = {

@@ -120,9 +120,9 @@ fun ImportScreen(initial: Uri?) {
                 }
                 Card {
                     Text("So geht's", style = MaterialTheme.typography.titleMedium, color = c.fg)
-                    Hint("1. Im Online-Banking (DKB, Sparkasse ...) oder bei PayPal die Umsätze als CSV exportieren, am besten die letzten 3 bis 12 Monate.")
-                    Hint("2. Datei hier auswählen oder aus der Download-App an Cashdy teilen.")
-                    Hint("3. Ich finde regelmäßige Zahlungen (Miete, Netflix, Gehalt) und schlage sie als Fixkosten vor. Einzelne Ausgaben kannst du mit übernehmen.")
+                    Hint("1. Im Online-Banking oder bei PayPal die Umsätze der letzten Monate als CSV herunterladen.")
+                    Hint("2. Datei hier auswählen.")
+                    Hint("3. Ich schlage dir regelmäßige Zahlungen als Fixkosten vor.")
                 }
                 Spacer(Modifier.height(12.dp))
                 BigButton("CSV-Datei wählen", { picker.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "*/*")) }, Modifier.fillMaxWidth())

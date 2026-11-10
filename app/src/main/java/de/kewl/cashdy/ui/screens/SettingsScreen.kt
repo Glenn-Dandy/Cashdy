@@ -89,7 +89,7 @@ fun SettingsScreen() {
             Pill("Einfach-Modus", s.cashMode == CashMode.SIMPLE, { setSettings { it.copy(cashMode = CashMode.SIMPLE) } })
         }
         Hint(
-            if (s.cashMode == CashMode.WALLET) "Abheben füllt dein Portemonnaie, Barzahlungen leeren es. Ab und zu ein Abgleich, fertig."
+            if (s.cashMode == CashMode.WALLET) "Abheben füllt dein Portemonnaie, Barzahlungen leeren es."
             else "Jede Abhebung zählt sofort als Ausgabe „Bargeld“. Barzahlungen musst du nicht extra eintragen."
         )
 

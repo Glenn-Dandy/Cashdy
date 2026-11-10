@@ -98,15 +98,14 @@ fun RestartDialog(onDone: () -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "Schau in deine Banking-App und trag ein, was jetzt auf dem Konto ist. " +
-                        "Bis zum ${end.format(DateTimeFormatter.ofPattern("d.M."))} rechne ich dann mit diesem Betrag, danach wieder ganz normal.",
+                    "Was zeigt deine Banking-App gerade? Bis zum ${end.format(DateTimeFormatter.ofPattern("d.M."))} rechne ich dann mit diesem Betrag, danach wieder ganz normal.",
                     style = MaterialTheme.typography.bodyMedium, color = c.fg,
                 )
                 MoneyField(balance, { balance = it }, "Kontostand jetzt in €")
                 SettingSwitch("Konto ist im Minus", "Zum Beispiel im Dispo", minus) { minus = it }
                 Hint(
                     (if (wallet && Budget.wallet(d) > 0) "Dein Bargeld (gerade ${Money.format(Budget.wallet(d))}) rechne ich dazu. " else "") +
-                        "Es wird nichts gelöscht, deine Einträge und Fixkosten bleiben. Die Rücklage fängt im nächsten Monat neu an."
+                        "Es wird nichts gelöscht."
                 )
             }
         },

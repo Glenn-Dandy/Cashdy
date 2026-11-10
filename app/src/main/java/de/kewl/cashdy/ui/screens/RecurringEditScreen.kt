@@ -112,7 +112,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean, fromDetected: Strin
     ) {
         ScreenHeader(if (existing == null) (if (income) "Neue Einnahme" else "Neue Fixkosten") else name.ifBlank { "Bearbeiten" }, onBack = { ui.back() })
 
-        if (det != null) Hint("Aus der erkannten Zahlung über ${det.sourceName}. Doch keine Fixkosten? Mit dem Pfeil oben kommst du zurück, es geht nichts verloren.")
+        if (det != null) Hint("Aus der erkannten Zahlung über ${det.sourceName}.")
         if (existing == null && !income && det == null) {
             Hint("Schnell-Vorlagen:")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,7 +164,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean, fromDetected: Strin
                 DateChip(endDate!!, { pick = "end" })
             } else TextButtonSoft("festlegen", { pick = "end" })
         }
-        if (loan) Hint("Beide Daten stehen in deinem Kreditvertrag. Ungefähr reicht. Dann zeige ich dir, wie viele Raten noch fehlen, und nach der letzten ist die Rate von selbst weg.")
+        if (loan) Hint("Steht im Kreditvertrag, ungefähr reicht.")
 
         SectionTitle("Kategorie")
         val cats = d.categories.filter { it.type == if (income) CategoryType.INCOME else CategoryType.EXPENSE }
@@ -183,7 +183,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean, fromDetected: Strin
         }
 
         if (!income && interval > 1) {
-            SettingSwitch("Auf die Monate verteilen", "Ich lege jeden Monat ${amountPerMonth(amount, interval)} zurück, damit der Fälligkeitsmonat nicht ins Minus kippt.", spread) { spread = it; spreadTouched = true }
+            SettingSwitch("Auf die Monate verteilen", "Ich lege jeden Monat ${amountPerMonth(amount, interval)} zurück dafür zurück.", spread) { spread = it; spreadTouched = true }
         }
 
         if (existing != null) {
@@ -257,7 +257,7 @@ fun RecurringEditScreen(id: String?, incomeDefault: Boolean, fromDetected: Strin
                     }
                 })
             }
-            Hint("Tipp: „Gekündigt“ behält die alten Monate korrekt. Löschen entfernt es auch aus der Vergangenheit.")
+            if (confirmDelete) Hint("Löschen entfernt den Posten auch aus allen alten Monaten. Nur bei einem Fehleintrag löschen, sonst lieber „Gekündigt ab heute“.")
         }
         Spacer(Modifier.height(40.dp))
     }

@@ -155,7 +155,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))) {
                 if (kind == EntryKind.SAVING) {
                     Text(
-                        "Geld aufs Sparkonto gelegt? Das geht von „Noch frei“ ab, zählt aber nicht als ausgegeben.",
+                        "Geht von „Noch frei“ ab, zählt aber nicht als ausgegeben.",
                         Modifier.padding(14.dp), style = MaterialTheme.typography.bodyMedium, color = c.muted,
                     )
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)

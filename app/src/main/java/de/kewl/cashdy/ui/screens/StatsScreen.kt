@@ -127,7 +127,7 @@ fun StatsScreen() {
         if (cats.isNotEmpty()) {
             StatCard {
                 Text("Wohin geht dein Geld?", style = MaterialTheme.typography.titleMedium, color = c.fg)
-                Text("Deine eigenen Ausgaben ohne Fixkosten, im Schnitt pro Monat. Tipp für den Verlauf.", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                Text("Ohne Fixkosten, pro Monat im Schnitt.", style = MaterialTheme.typography.bodySmall, color = c.muted)
                 val top = cats.take(5)
                 val max = top.flatMap { it.values }.maxOrNull()?.coerceAtLeast(1) ?: 1
                 top.forEachIndexed { i, cs ->
@@ -268,7 +268,6 @@ private fun YearTable(months: List<MonthStat>, today: LocalDate) {
                 }
             }
         }
-        Hint("Vorbei: was übrig blieb. Jetzt: was noch frei ist. Danach: was zum Ausgeben bereitsteht, wenn nichts dazukommt.", Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp))
     }
 }
 

@@ -63,13 +63,11 @@ fun HelpScreen() {
         Group {
             Topic("Zahlungserkennung einschalten", open == 0, { open = if (open == 0) -1 else 0 }) {
                 Para(
-                    "Android schützt den Zugriff auf Benachrichtigungen besonders, wenn eine App nicht aus dem Play Store kommt. " +
-                        "Deshalb lässt sich der Schalter beim ersten Mal nicht umlegen, und Play Protect meldet, dass der Zugriff verweigert wurde. So geht es trotzdem:"
+                    "Bei Apps, die nicht aus dem Play Store kommen, sperrt Android diesen Schalter erst einmal. So geht es trotzdem:"
                 )
                 Step(1, "Tippe auf „Zugriff öffnen“ und versuch, Cashdy einzuschalten. Die Meldung „Eingeschränkte Einstellung“ einfach schließen.")
-                Step(2, "Tippe auf „App-Infos öffnen“. Oben rechts das Menü mit den drei Punkten öffnen und „Eingeschränkte Einstellungen zulassen“ wählen. Siehst du keine drei Punkte? Dann App-Infos ganz schließen, Schritt 1 noch einmal versuchen und App-Infos neu öffnen. Manchmal braucht Android dafür ein paar Anläufe.")
+                Step(2, "Tippe auf „App-Infos öffnen“. Oben rechts das Menü mit den drei Punkten öffnen und „Eingeschränkte Einstellungen zulassen“ wählen. Keine drei Punkte da? App-Infos schließen, Schritt 1 wiederholen, App-Infos neu öffnen.")
                 Step(3, "Noch einmal „Zugriff öffnen“ und Cashdy einschalten. Jetzt klappt es.")
-                Para("Der Menüpunkt in Schritt 2 erscheint erst, nachdem du Schritt 1 einmal versucht hast, und nur auf frisch geöffneten App-Infos. Cashdy liest nur die Apps, die du unter Zahlungserkennung freigibst, und schickt nichts ins Internet.")
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButtonSoft("Zugriff öffnen", { openListenerSettings(ctx) })
                     TextButtonSoft("App-Infos öffnen", { openAppInfo(ctx) })
@@ -78,41 +76,41 @@ fun HelpScreen() {
             }
             GroupDivider()
             Topic("Was heißt „Noch frei“?", open == 1, { open = if (open == 1) -1 else 1 }) {
-                Para("Deine Einnahmen im Monat, minus Fixkosten, minus Rücklage, minus alles, was du schon ausgegeben hast. Das, was übrig bleibt, kannst du ohne schlechtes Gewissen ausgeben.")
-                Para("„Heute drin“ ist dieser Betrag geteilt durch die Tage, die der Monat noch hat.")
-                Para("Im ersten Monat rechne ich anders: Statt mit dem ganzen Gehalt starte ich mit deinem Kontostand vom ersten Tag. Was bis dahin abgebucht wurde, steckt schon darin. Gehalt und Fixkosten, die danach noch kommen, rechne ich dazu oder ab, auch seltene Rechnungen mit vollem Betrag. Ab dem nächsten Monat geht es ganz normal weiter, und die Rücklage fängt an.")
-                Para("Ob alles stimmt, siehst du unter Mehr › Kontostand prüfen: Tipp ein, was deine Banking-App zeigt. Ich sage dir, ob es passt, und suche nach dem Eintrag, der die Differenz erklärt, zum Beispiel eine Zahlung, die auf bar steht, aber vom Konto ging.")
-                Para("Stimmen die Zahlen irgendwann nicht mehr, zum Beispiel weil du ein paar Wochen nichts eingetragen hast: Unter Mehr › Kontostand prüfen › Neu anfangen rechne ich ab heute wieder mit deinem echten Kontostand. Es wird nichts gelöscht.")
+                Para("Einnahmen minus Fixkosten, Rücklage und Ausgaben. Das kannst du ohne schlechtes Gewissen ausgeben.")
+                Para("„Heute drin“ ist das geteilt durch die restlichen Tage.")
+                Para("Im ersten Monat starte ich mit deinem Kontostand statt mit dem Gehalt. Ab dem nächsten Monat geht es normal weiter.")
+                Para("Ob alles stimmt, prüfst du unter Mehr › Kontostand prüfen.")
+                Para("Passt gar nichts mehr? Dort unter „Neu anfangen“ rechne ich ab heute mit deinem echten Kontostand. Es wird nichts gelöscht.")
             }
             GroupDivider()
             Topic("Wie funktioniert die Rücklage?", open == 2, { open = if (open == 2) -1 else 2 }) {
-                Para("Kosten, die nur alle paar Monate kommen (Kfz-Versicherung, Rundfunkbeitrag), werden auf die Monate verteilt. 480 € im Jahr sind 40 € pro Monat, die jeden Monat von „Noch frei“ abgehen und im Topf landen.")
-                Para("Kommt die Rechnung, bezahlt sie der Topf. Dein „Noch frei“ bleibt in dem Monat gleich. Das Geld bleibt dafür einfach auf dem Konto liegen.")
-                Para("Hast du erst kurz vor der Rechnung angefangen, reicht der Topf noch nicht. Dann zählt der fehlende Rest im Monat der Rechnung, und unter „Fest“ siehst du vorher, wie viel fehlt.")
+                Para("Seltene Kosten wie die Kfz-Versicherung verteile ich auf die Monate: 480 € im Jahr sind 40 € pro Monat für den Topf.")
+                Para("Kommt die Rechnung, zahlt sie der Topf. Das Geld bleibt dafür einfach auf dem Konto.")
+                Para("Reicht der Topf noch nicht, zählt der Rest im Monat der Rechnung.")
             }
             GroupDivider()
             Topic("Sparen und Tagesgeld", open == 7, { open = if (open == 7) -1 else 7 }) {
-                Para("Legst du Geld aufs Sparkonto, tipp auf Plus und dann auf „Sparen“. Es geht von „Noch frei“ ab, zählt aber nicht als ausgegeben. Auf der Startseite siehst du, wie viel du dieses Jahr schon gespart hast.")
-                Para("Am Monatsende sage ich dir, wie viel du aufs Sparkonto legen kannst. Die Rücklage lässt du dabei auf dem Konto, sonst fehlt sie, wenn die Rechnung kommt.")
+                Para("Geld aufs Sparkonto: Plus, dann „Sparen“. Geht von „Noch frei“ ab, zählt aber nicht als ausgegeben.")
+                Para("Am Monatsende sage ich dir, wie viel du sparen kannst. Die Rücklage bleibt auf dem Konto.")
             }
             GroupDivider()
             Topic("Kredite und Raten", open == 6, { open = if (open == 6) -1 else 6 }) {
-                Para("Trag die Rate als Fixkosten ein und wähl die Kategorie „Kredite & Raten“. Gib dazu die letzte Rate an, sie steht in deinem Vertrag. Ungefähr reicht.")
-                Para("Unter „Fest“ siehst du dann, wie viele Raten noch fehlen und wann du fertig bist. Nach der letzten Rate ist sie von selbst weg, und du hast jeden Monat mehr frei.")
+                Para("Rate als Fixkosten mit Kategorie „Kredite & Raten“ eintragen, dazu die letzte Rate aus dem Vertrag.")
+                Para("Unter „Fest“ siehst du dann, wie viele Raten noch fehlen.")
             }
             GroupDivider()
             Topic("Bargeld", open == 3, { open = if (open == 3) -1 else 3 }) {
-                Para("Portemonnaie führen: Abheben füllt dein Portemonnaie, Barzahlungen leeren es. Zählt als ausgegeben, sobald du bar bezahlst.")
-                Para("Einfach-Modus: Abheben zählt sofort als ausgegeben, Barzahlungen musst du nicht eintragen. Umstellen kannst du das unter Mehr › Allgemein.")
+                Para("Portemonnaie führen: Abheben füllt es, Barzahlungen leeren es.")
+                Para("Einfach-Modus: Abheben zählt sofort als ausgegeben. Umstellen unter Mehr › Allgemein.")
             }
             GroupDivider()
             Topic("Kassenbon fotografieren", open == 4, { open = if (open == 4) -1 else 4 }) {
-                Para("Bon glatt hinlegen, gut ausleuchten und so fotografieren, dass die Summe gut lesbar ist. Ich lese Summe, Laden, Datum und ob bar oder mit Karte bezahlt wurde.")
-                Para("Stimmt die Summe nicht, tipp im Eingabefenster auf einen der anderen Beträge vom Bon.")
+                Para("Bon glatt hinlegen, gut ausleuchten, Summe gut lesbar fotografieren.")
+                Para("Falsche Summe? Tipp auf einen der anderen Beträge vom Bon.")
             }
             GroupDivider()
             Topic("Kontoauszug einlesen", open == 5, { open = if (open == 5) -1 else 5 }) {
-                Para("Lade bei DKB oder PayPal die Umsätze als CSV-Datei herunter und öffne sie mit Cashdy (unter „Fest“ auf Plus tippen, dann „Aus Kontoauszug finden“). Ich erkenne doppelte Einträge und schlage dir regelmäßige Zahlungen als Fixkosten vor.")
+                Para("Umsätze als CSV herunterladen, dann unter „Fest“ auf Plus und „Aus Kontoauszug finden“. Ich schlage dir regelmäßige Zahlungen als Fixkosten vor.")
             }
         }
         Spacer(Modifier.height(40.dp))

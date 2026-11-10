@@ -87,9 +87,8 @@ fun DetectionScreen() {
         Card(color = if (enabled) c.surface else c.soft1) {
             Text(if (enabled) "Aktiv" else "Aus", style = MaterialTheme.typography.titleMedium, color = c.fg)
             Hint(
-                if (enabled) "Ich lese nur die Benachrichtigungen der Apps unten. Alles andere ignoriere ich sofort. Nichts verlässt dein Handy."
-                else "Erlaube mir den Zugriff auf Benachrichtigungen. Dann schlage ich dir Zahlungen von PayPal, DKB & Co. direkt vor. " +
-                    "Lässt sich der Schalter nicht umlegen? Das ist ein Schutz von Android, die Hilfe zeigt in drei Schritten, wie es geht."
+                if (enabled) "Ich lese nur die Apps unten. Nichts verlässt dein Handy."
+                else "Mit Zugriff auf Benachrichtigungen schlage ich dir Zahlungen von PayPal, DKB & Co. vor. Schalter klemmt? Tipp auf „So geht's“."
             )
             Row {
                 TextButtonSoft(if (enabled) "Systemeinstellung öffnen" else "Einschalten", { openListenerSettings(ctx) })
@@ -99,7 +98,7 @@ fun DetectionScreen() {
 
         SettingSwitch(
             "Bekannte Händler automatisch eintragen",
-            "Wenn ich den Händler schon kenne (z. B. REWE = Lebensmittel), trage ich direkt ein. Rückgängig per Benachrichtigung.",
+            "Zum Beispiel REWE gleich bei Lebensmittel.",
             s.autoAccept,
         ) { v -> setSettings { it.copy(autoAccept = v) } }
 
@@ -148,7 +147,7 @@ fun RecorderScreen() {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         ScreenHeader("Rekorder", onBack = { ui.back() })
-        Hint("Der Rekorder merkt sich alle Benachrichtigungen mit einem Geldbetrag, egal von welcher App. So sehen wir, wie deine Bank ihre Meldungen formuliert, und können sie einbauen. Höchstens 200 Meldungen, nur auf diesem Handy.")
+        Hint("Merkt sich Meldungen mit Geldbetrag von allen Apps, damit wir neue Banken einbauen können. Höchstens 200, nur auf diesem Handy.")
         SettingSwitch("Rekorder an", null, s.recorder) { v -> setSettings { it.copy(recorder = v) } }
         if (d.recorded.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButtonSoft("Alles kopieren", {

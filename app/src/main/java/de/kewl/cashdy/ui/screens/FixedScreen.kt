@@ -148,7 +148,7 @@ fun FixedScreen() {
         }
 
         if (d.recurring.isEmpty()) {
-            Hint("Hier kommen Miete, Handy, Netflix, Versicherungen und dein Gehalt rein. Einmal eintragen, ich rechne jeden Monat automatisch mit. Tipp oben auf Plus.")
+            Hint("Miete, Handy, Versicherungen, Gehalt: einmal eintragen, ich rechne jeden Monat mit. Tipp oben auf Plus.")
         } else {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SearchField(query, { query = it }, "Name oder Kategorie suchen", Modifier.weight(1f))
@@ -280,7 +280,7 @@ private fun LoanRow(r: Recurring, today: LocalDate, onClick: () -> Unit) {
             Text(Money.format(Recurrence.currentPrice(r, today)), style = ItemValue, color = c.fg)
         }
         if (lp == null) {
-            Text("Wann ist die letzte Rate? Tipp hier und trag sie ein, dann siehst du, wann du fertig bist.", style = MaterialTheme.typography.bodySmall, color = c.primary)
+            Text("Letzte Rate eintragen, dann siehst du, wann du fertig bist.", style = MaterialTheme.typography.bodySmall, color = c.primary)
             return@Column
         }
         Spacer(Modifier.height(6.dp))

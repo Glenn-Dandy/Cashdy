@@ -87,9 +87,9 @@ fun BankCheckScreen() {
         }
         Hint(
             when {
-                anchor == null -> "Ich kenne deinen Kontostand noch nicht. Ich merke ihn mir und sage dir beim nächsten Mal, ob alles passt."
-                anchor.fromStart -> "Ich rechne ab dem ${anchor.date.format(day)}, da hast du mit Kontostand angefangen. Bargeld zählt hier nicht mit."
-                else -> "Ich rechne ab deiner letzten Prüfung am ${anchor.date.format(day)}. Bargeld zählt hier nicht mit."
+                anchor == null -> "Beim ersten Mal merke ich mir den Stand, ab dann vergleiche ich."
+                anchor.fromStart -> "Gerechnet ab deinem Start am ${anchor.date.format(day)}, ohne Bargeld."
+                else -> "Gerechnet ab der letzten Prüfung am ${anchor.date.format(day)}, ohne Bargeld."
             }
         )
 
@@ -127,7 +127,7 @@ fun BankCheckScreen() {
         SectionTitle("Neu anfangen")
         Card {
             Text(
-                "Passt gar nichts mehr, zum Beispiel weil du ein paar Wochen nichts eingetragen hast? Dann fang mit deinem echten Kontostand neu an. Es wird nichts gelöscht.",
+                "Passt gar nichts mehr? Fang mit deinem echten Kontostand neu an, es wird nichts gelöscht.",
                 style = MaterialTheme.typography.bodyMedium, color = c.fg,
             )
             Spacer(Modifier.height(12.dp))
@@ -186,7 +186,7 @@ private fun Result(diff: Long, expected: Long, onRemember: () -> Unit) {
 
     if (matches.isEmpty()) {
         Text(
-            if (less) "Vielleicht fehlt eine Ausgabe, zum Beispiel eine Lastschrift, Überweisung oder PayPal-Zahlung. Schau im Kontoauszug nach Beträgen, die du nicht eingetragen hast."
+            if (less) "Vielleicht fehlt eine Ausgabe, etwa eine Lastschrift oder PayPal-Zahlung. Schau im Kontoauszug nach."
             else "Vielleicht fehlt eine Einnahme, oder eine Abbuchung ist noch nicht durch.",
             style = MaterialTheme.typography.bodyMedium, color = c.fg, modifier = Modifier.padding(horizontal = 4.dp),
         )
@@ -210,5 +210,5 @@ private fun Result(diff: Long, expected: Long, onRemember: () -> Unit) {
         ui.say("Ausgeglichen, jetzt stimmt es wieder")
         ui.back()
     }, Modifier.fillMaxWidth(), color = c.soft2, textColor = c.fg)
-    Hint("„Ausgleichen“ trägt die Differenz als „Kontoabgleich“ ein, damit „Noch frei“ wieder stimmt.")
+    Hint("„Ausgleichen“ trägt die Differenz als „Kontoabgleich“ ein.")
 }
