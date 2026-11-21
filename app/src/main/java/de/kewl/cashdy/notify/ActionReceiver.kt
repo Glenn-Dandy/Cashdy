@@ -21,6 +21,7 @@ class ActionReceiver : BroadcastReceiver() {
         const val UNDO = "de.kewl.cashdy.UNDO"
         const val SALARY_YES = "de.kewl.cashdy.SALARY_YES"
         const val SALARY_NO = "de.kewl.cashdy.SALARY_NO"
+        const val FROM_SAVINGS = "de.kewl.cashdy.FROM_SAVINGS"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -29,6 +30,7 @@ class ActionReceiver : BroadcastReceiver() {
         val value = intent.getStringExtra(EXTRA_VALUE)
         when (intent.action) {
             ACCEPT -> Store.update { Detection.accept(it, id, value).first }
+            FROM_SAVINGS -> Store.update { Detection.acceptFromSavings(it, id).first }
             IGNORE -> Store.update { Detection.ignore(it, id) }
             CASH_WALLET -> Store.update { Detection.accept(it, id, null, asCashWithdrawal = true).first }
             CASH_EXPENSE -> Store.update { Detection.accept(it, id, null, asCashWithdrawal = false).first }

@@ -57,6 +57,7 @@ import de.kewl.cashdy.data.EntryKind
 import de.kewl.cashdy.data.PayMethod
 import de.kewl.cashdy.data.Source
 import de.kewl.cashdy.data.Store
+import de.kewl.cashdy.detect.Detection
 import de.kewl.cashdy.domain.Merchants
 import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.ui.AddRequest
@@ -98,6 +99,8 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
     var confirmDelete by remember { mutableStateOf(false) }
 
     val cashKind = kind == EntryKind.CASH_WITHDRAWAL || kind == EntryKind.CASH_ADJUST || kind == EntryKind.CASH_START
+    // Aufs Sparkonto oder vom Sparkonto: beides unter „Sparen“.
+    val savingKind = kind == EntryKind.SAVING || kind == EntryKind.FROM_SAVINGS
     val catType = if (kind == EntryKind.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
     val cats = remember(kind) {
         val since = LocalDate.now().minusDays(90)
@@ -116,9 +119,14 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Segmented(
                         listOf(EntryKind.EXPENSE to "Ausgabe", EntryKind.INCOME to "Einnahme", EntryKind.REFUND to "Erstattung", EntryKind.SAVING to "Sparen"),
-                        kind, Modifier.weight(1f),
+                        if (kind == EntryKind.FROM_SAVINGS) EntryKind.SAVING else kind, Modifier.weight(1f),
                     ) { k ->
-                        kind = k
+                        // Von „Einnahme“ zu „Sparen“: Das Geld kam rein, also vom Sparkonto.
+                        kind = when {
+                            k == EntryKind.SAVING && kind == EntryKind.FROM_SAVINGS -> kind
+                            k == EntryKind.SAVING && kind == EntryKind.INCOME -> EntryKind.FROM_SAVINGS
+                            else -> k
+                        }
                         when (k) {
                             EntryKind.INCOME -> categoryId = de.kewl.cashdy.data.DefaultCategories.INCOME_OTHER
                             else -> if (!categoryTouched || cats.none { it.id == categoryId }) categoryId = null
@@ -153,14 +161,19 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
             }
 
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(1.dp, c.line, RoundedCornerShape(18.dp))) {
-                if (kind == EntryKind.SAVING) {
+                if (savingKind) {
+                    Row(Modifier.padding(start = 14.dp, end = 14.dp, top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Pill("Aufs Sparkonto", kind == EntryKind.SAVING, { kind = EntryKind.SAVING })
+                        Pill("Vom Sparkonto", kind == EntryKind.FROM_SAVINGS, { kind = EntryKind.FROM_SAVINGS })
+                    }
                     Text(
-                        "Geht von „Noch frei“ ab, zählt aber nicht als ausgegeben.",
+                        if (kind == EntryKind.SAVING) "Geht von „Noch frei“ ab, zählt aber nicht als ausgegeben."
+                        else "Kommt zu „Noch frei“ dazu, zählt aber nicht als Einnahme.",
                         Modifier.padding(14.dp), style = MaterialTheme.typography.bodyMedium, color = c.muted,
                     )
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
                 }
-                if (!cashKind && kind != EntryKind.SAVING) {
+                if (!cashKind && !savingKind) {
                     val cat = cats.firstOrNull { it.id == categoryId }
                     CategoryDropdown(cats, { categoryId = it.id; categoryTouched = true }) { open ->
                         FieldRow("Kategorie", open) {
@@ -171,11 +184,11 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
                 }
                 if (!cashKind) {
-                    FieldRow(when (kind) { EntryKind.INCOME -> "Von wem?"; EntryKind.SAVING -> "Wohin?"; else -> "Wo?" }) {
+                    FieldRow(when (kind) { EntryKind.INCOME, EntryKind.FROM_SAVINGS -> "Von wem?"; EntryKind.SAVING -> "Wohin?"; else -> "Wo?" }) {
                         InlineField(merchant, { t ->
                             merchant = t
                             if (!categoryTouched && kind == EntryKind.EXPENSE) Merchants.suggestCategory(d, t)?.let { categoryId = it }
-                        }, when (kind) { EntryKind.INCOME -> "z. B. Oma"; EntryKind.SAVING -> "z. B. Tagesgeld"; else -> "z. B. REWE" }, Modifier.weight(1f))
+                        }, when (kind) { EntryKind.INCOME -> "z. B. Oma"; EntryKind.SAVING, EntryKind.FROM_SAVINGS -> "z. B. Tagesgeld"; else -> "z. B. REWE" }, Modifier.weight(1f))
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp), color = c.line)
                 }
@@ -244,7 +257,7 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                             "receipts/${f.name}"
                         }.getOrNull() else editing?.receipt
                         val finalCat = when {
-                            cashKind || kind == EntryKind.SAVING -> null
+                            cashKind || savingKind -> null
                             categoryId != null -> categoryId
                             kind == EntryKind.INCOME -> de.kewl.cashdy.data.DefaultCategories.INCOME_OTHER
                             else -> de.kewl.cashdy.data.DefaultCategories.OTHER
@@ -254,14 +267,17 @@ fun AddSheet(req: AddRequest, onDismiss: () -> Unit, onScan: () -> Unit) {
                             amount = if (kind == EntryKind.CASH_ADJUST && (editing?.amount ?: 0) < 0) -cents else cents,
                             date = date, kind = kind, categoryId = finalCat,
                             merchant = merchant.trim(), note = note.trim(),
-                            method = if (kind == EntryKind.INCOME || kind == EntryKind.SAVING) (editing?.method ?: PayMethod.TRANSFER) else if (cashKind) PayMethod.CASH else method,
+                            method = if (kind == EntryKind.INCOME || savingKind) (editing?.method ?: PayMethod.TRANSFER) else if (cashKind) PayMethod.CASH else method,
                             source = editing?.source ?: if (req.fromScan) Source.OCR else Source.MANUAL,
                             createdAt = editing?.createdAt ?: System.currentTimeMillis(),
                             receipt = receiptPath,
                         )
                         Store.update { data ->
                             val list = if (editing != null) data.entries.map { if (it.id == entry.id) entry else it } else data.entries + entry
-                            val learned = if (kind == EntryKind.EXPENSE && categoryTouched) Merchants.learn(data, entry.merchant, entry.categoryId) else data
+                            var learned = if (kind == EntryKind.EXPENSE && categoryTouched) Merchants.learn(data, entry.merchant, entry.categoryId) else data
+                            // Absender als eigenes Konto merken, wenn ein Eingang zu „Vom Sparkonto“ wird, und vergessen, wenn er es nicht mehr ist.
+                            if (kind == EntryKind.FROM_SAVINGS && editing?.kind == EntryKind.INCOME) learned = Detection.rememberOwnAccount(learned, entry.merchant, true)
+                            if (editing?.kind == EntryKind.FROM_SAVINGS && kind != EntryKind.FROM_SAVINGS) learned = Detection.rememberOwnAccount(learned, editing.merchant, false)
                             learned.copy(entries = list)
                         }
                         CashdyWidget.updateAll(ctx)

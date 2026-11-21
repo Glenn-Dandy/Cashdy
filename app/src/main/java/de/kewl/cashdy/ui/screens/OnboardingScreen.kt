@@ -122,7 +122,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
             val start = Money.parse(balance)?.let { if (minus) -it else it }
             val settings = d.settings.copy(
                 onboarded = true, name = name.trim(), periodMode = mode, periodDay = if (mode == PeriodMode.CALENDAR) 1 else monthDay,
-                periodStarts = emptyList(), cashMode = cashMode,
+                periodStarts = emptyList(), periodChanges = emptyList(), cashMode = cashMode,
                 startDay = start?.let { today }, startBalance = start,
             )
             // Mit Kontostand fängt die Rücklage erst im ersten vollen Monat an.

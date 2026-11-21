@@ -390,6 +390,7 @@ fun entryTitle(e: Entry, cat: Category?): String = when (e.kind) {
     EntryKind.CASH_ADJUST -> if (e.amount < 0) "Bargeld gefunden" else "Bargeld-Abgleich"
     EntryKind.CASH_START -> "Bargeld-Startbestand"
     EntryKind.SAVING -> e.merchant.ifBlank { "Gespart" }
+    EntryKind.FROM_SAVINGS -> e.merchant.ifBlank { "Vom Ersparten" }
     else -> e.merchant.ifBlank { cat?.name ?: "Ausgabe" }
 }
 
@@ -397,7 +398,7 @@ fun entryTitle(e: Entry, cat: Category?): String = when (e.kind) {
 @Composable
 fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> Unit) {
     val c = C.colors
-    val positive = e.kind == EntryKind.INCOME || e.kind == EntryKind.REFUND || (e.kind == EntryKind.CASH_ADJUST && e.amount < 0)
+    val positive = e.kind == EntryKind.INCOME || e.kind == EntryKind.REFUND || e.kind == EntryKind.FROM_SAVINGS || (e.kind == EntryKind.CASH_ADJUST && e.amount < 0)
     val neutral = e.kind == EntryKind.CASH_WITHDRAWAL || e.kind == EntryKind.CASH_START
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = rowStart, end = 16.dp, top = 11.dp, bottom = 11.dp),
@@ -410,6 +411,7 @@ fun EntryRow(e: Entry, cat: Category?, showDay: Boolean = false, onClick: () -> 
                 when {
                     e.kind == EntryKind.REFUND -> "Erstattung"
                     e.kind == EntryKind.SAVING && e.merchant.isNotBlank() -> "Gespart"
+                    e.kind == EntryKind.FROM_SAVINGS && e.merchant.isNotBlank() -> "Vom Ersparten"
                     e.merchant.isNotBlank() && (e.kind == EntryKind.EXPENSE || e.kind == EntryKind.INCOME) -> cat?.name
                     else -> null
                 },

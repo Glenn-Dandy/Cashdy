@@ -41,6 +41,7 @@ object AccountCheck {
     fun bankValue(e: Entry): Cents = when (e.kind) {
         EntryKind.EXPENSE -> if (e.method == PayMethod.CASH) 0 else -e.amount
         EntryKind.REFUND, EntryKind.INCOME -> if (e.method == PayMethod.CASH) 0 else e.amount
+        EntryKind.FROM_SAVINGS -> e.amount
         EntryKind.SAVING, EntryKind.CASH_WITHDRAWAL -> -e.amount
         EntryKind.CASH_ADJUST, EntryKind.CASH_START -> 0
     }

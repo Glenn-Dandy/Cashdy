@@ -388,4 +388,63 @@ class BudgetTest {
         assertEquals(listOf(PriceStep(d(2027, 3, 1), 4_000), PriceStep(d(2027, 6, 1), 4_500)), Recurrence.alignFirstPrice(two, d(2027, 1, 1), d(2027, 3, 1), today))
         assertEquals(two, Recurrence.alignFirstPrice(two, d(2027, 1, 1), d(2027, 7, 1), today))
     }
+    @Test fun moneyFromSavingsCoversSpendingButIsNoIncome() {
+        val data = AppData(
+            recurring = listOf(salary, rent),
+            entries = listOf(
+                Entry("e", 50_000, d(2026, 10, 3), EntryKind.EXPENSE, "food"),
+                Entry("s", 10_000, d(2026, 10, 4), EntryKind.SAVING),
+                Entry("u", 65_000, d(2026, 10, 5), EntryKind.FROM_SAVINGS, merchant = "Tagesgeld", method = PayMethod.TRANSFER),
+            ),
+        )
+        val oct = Budget.summary(data, Periods.calendar(d(2026, 10, 1)), d(2026, 10, 10))
+        assertEquals(300_000L, oct.income)
+        assertEquals(50_000L, oct.spent)
+        assertEquals(65_000L, oct.fromSavings)
+        assertEquals(300_000L - 85_000 - 50_000 - 10_000 + 65_000, oct.free)
+        // Im Jahr: gespart minus wieder geholt.
+        assertEquals(-55_000L, Budget.savedInYear(data, 2026))
+        // Aufs Konto kommt es trotzdem.
+        assertEquals(65_000L, de.kewl.cashdy.domain.AccountCheck.bankValue(data.entries.first { it.id == "u" }))
+        assertEquals(0L, Budget.wallet(data))
+    }
+
+    @Test fun monthStartFollowsNewMainIncome() {
+        val today = d(2026, 11, 21)
+        // Gehalt am 29. ist ausgelaufen, jetzt kommt Krankengeld am 17.
+        val oldSalary = Recurring("sal", "Gehalt", income = true, firstDue = d(2026, 1, 29), endDate = d(2026, 10, 29),
+            prices = listOf(PriceStep(d(2026, 1, 29), 200_000)), salary = true)
+        val sick = Recurring("kg", "Krankengeld", income = true, firstDue = d(2026, 11, 17), prices = listOf(PriceStep(d(2026, 11, 17), 150_000)))
+        val s = Settings(onboarded = true, periodMode = PeriodMode.FIXED_DAY, periodDay = 29, shiftWeekend = true)
+        val data = AppData(recurring = listOf(oldSalary, sick, rent), settings = s)
+        assertEquals(Periods.fixedDay(today, 29, true), Periods.periodFor(today, s))
+
+        val sug = Salary.suggestStart(data, today)!!
+        assertEquals("kg", sug.income.id)
+        assertEquals(d(2026, 11, 17), sug.from)
+
+        val after = Salary.acceptStart(data, sug)
+        val st = after.settings
+        // Der Monat mit dem Wechsel endet am Tag davor, ab dem 17. läuft der neue.
+        assertEquals(d(2026, 10, 29), Periods.periodFor(d(2026, 11, 10), st).start)
+        assertEquals(d(2026, 11, 16), Periods.periodFor(d(2026, 11, 10), st).end)
+        assertEquals(d(2026, 11, 17), Periods.periodFor(today, st).start)
+        assertEquals(d(2026, 12, 16), Periods.periodFor(today, st).end)
+        assertEquals(d(2026, 12, 17), Periods.next(Periods.periodFor(today, st), st).start)
+        // Alte Monate bleiben, wie sie waren.
+        assertEquals(Periods.fixedDay(d(2026, 9, 5), 29, true), Periods.periodFor(d(2026, 9, 5), st))
+        assertEquals(d(2026, 10, 29), Periods.previous(Periods.periodFor(today, st), st).start)
+        // Krankengeld zählt jetzt als Gehalt, gefragt wird nicht mehr.
+        assertEquals(true, after.recurring.first { it.id == "kg" }.salary)
+        assertEquals(false, after.recurring.first { it.id == "sal" }.salary)
+        assertEquals(null, Salary.suggestStart(after, today))
+        assertEquals(150_000L, Budget.summary(after, Periods.periodFor(today, st), today).income)
+
+        // Nein: nicht nochmal fragen, auch nicht im nächsten Monat.
+        val no = Salary.declineStart(data, sug)
+        assertEquals(null, Salary.suggestStart(no, today))
+        assertEquals(null, Salary.suggestStart(no, d(2026, 12, 5)))
+        // Hauptgeld am Monatsanfang: nichts zu fragen.
+        assertEquals(null, Salary.suggestStart(AppData(recurring = listOf(salary), settings = Settings(onboarded = true, periodMode = PeriodMode.FIXED_DAY, periodDay = 28)), today))
+    }
 }

@@ -47,6 +47,7 @@ import de.kewl.cashdy.domain.PotStatus
 import de.kewl.cashdy.domain.Reserve
 import de.kewl.cashdy.domain.Periods
 import de.kewl.cashdy.domain.Recurrence
+import de.kewl.cashdy.domain.Salary
 import de.kewl.cashdy.domain.Summary
 import de.kewl.cashdy.ui.AddRequest
 import de.kewl.cashdy.ui.LocalUi
@@ -215,6 +216,28 @@ fun HomeScreen() {
         // Das Maskottchen meldet sich nur, wenn es etwas zu sagen gibt.
         if (line.show) Hint(line.text, Modifier.padding(horizontal = 4.dp))
 
+        // Das Hauptgeld kommt an einem anderen Tag als der Monatsanfang: einmal fragen.
+        remember(d, today) { Salary.suggestStart(d, today) }?.let { sug ->
+            val dm = java.time.format.DateTimeFormatter.ofPattern("d.M.")
+            Group {
+                Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp)) {
+                    Text("Monat ab dem ${sug.from.dayOfMonth}. starten?", style = MaterialTheme.typography.titleMedium, color = c.fg)
+                    Text(
+                        "„${sug.income.name}“ kommt am ${sug.from.dayOfMonth}., dein Monat fängt am ${period.start.dayOfMonth}. an. " +
+                            "Ab ${sug.from.format(dm)} neu zählen? Alte Monate bleiben, wie sie sind.",
+                        style = MaterialTheme.typography.bodyMedium, color = c.fg,
+                    )
+                }
+                Row(Modifier.align(Alignment.End).padding(end = 8.dp, bottom = 4.dp)) {
+                    TextButtonSoft("Nein", { Store.update { Salary.declineStart(it, sug) } })
+                    TextButtonSoft("Ja, ab ${sug.from.format(dm)}", {
+                        Store.update { Salary.acceptStart(it, sug) }
+                        ui.say("Dein Monat beginnt jetzt am ${sug.from.dayOfMonth}.")
+                    })
+                }
+            }
+        }
+
         // Kredit abbezahlt: einmal richtig feiern.
         d.recurring.firstOrNull { r ->
             Recurrence.isLoan(r) && r.endDate != null && !r.endDate.isAfter(today) && r.endDate.isAfter(today.minusDays(60)) &&
@@ -278,6 +301,10 @@ fun HomeScreen() {
                     "Gespart", "− " + Money.format(sum.saved), valueColor = c.good,
                     note = "dieses Jahr schon ${Money.format(Budget.savedInYear(d, today.year))}", onClick = { ui.go(Route.MonthDetail()) },
                 )
+            }
+            if (sum.fromSavings > 0) {
+                GroupDivider()
+                ValueRow("Vom Ersparten", "+ " + Money.format(sum.fromSavings), onClick = { ui.go(Route.MonthDetail()) })
             }
             GroupDivider()
             ValueRow(if (sum.free >= 0) "Noch frei" else "Drüber", Money.format(sum.free), strong = true, valueColor = if (sum.free >= 0) c.fg else c.warn)

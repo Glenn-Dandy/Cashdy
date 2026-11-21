@@ -125,12 +125,13 @@ private fun DetectedCard(det: Detected, expanded: Boolean) {
                         DetectedKind.CASH -> "Geld abgehoben"
                         DetectedKind.INCOME -> "Eingang" + if (det.merchant.isNotBlank()) " von ${det.merchant}" else ""
                         DetectedKind.REFUND -> "↩️ Erstattung ${det.merchant}"
+                        DetectedKind.FROM_SAVINGS -> "Vom Sparkonto" + if (det.merchant.isNotBlank()) " (${det.merchant})" else ""
                     },
                     style = MaterialTheme.typography.titleMedium, color = c.fg,
                 )
                 Text("${det.sourceName} · ${dayLabel(Detection.dayOf(det))}", style = MaterialTheme.typography.bodySmall, color = c.muted)
             }
-            Text(Money.format(det.amount), style = MaterialTheme.typography.titleLarge, color = if (det.kind == DetectedKind.INCOME || det.kind == DetectedKind.REFUND) c.good else c.fg)
+            Text(Money.format(det.amount), style = MaterialTheme.typography.titleLarge, color = if (det.kind == DetectedKind.INCOME || det.kind == DetectedKind.REFUND || det.kind == DetectedKind.FROM_SAVINGS) c.good else c.fg)
         }
         Detection.maybeDuplicate(d, det)?.let { warn ->
             Text(
@@ -163,12 +164,23 @@ private fun DetectedCard(det: Detected, expanded: Boolean) {
                 Pill("Ins Portemonnaie", true, { Store.update { Detection.accept(it, det.id, null, true).first }; done("Ins Portemonnaie gesteckt") })
                 Pill("War eine Ausgabe", false, { Store.update { Detection.accept(it, det.id, null, false).first }; done("Als Ausgabe eingetragen") })
             }
-            DetectedKind.INCOME -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (d.settings.periodMode == PeriodMode.INCOME) Pill("Gehalt, neuer Monat", true, {
-                    Store.update { data -> Salary.startNewPeriod(Detection.ignore(data, det.id).let { x -> x.copy(detected = x.detected.map { if (it.id == det.id) it.copy(status = DetectedStatus.ACCEPTED) else it }) }, Detection.dayOf(det), det.amount) }
-                    done("Neuer Monat gestartet")
-                })
-                Pill("Einnahme", d.settings.periodMode != PeriodMode.INCOME, { Store.update { Detection.accept(it, det.id, null).first }; done("Als Einnahme eingetragen") })
+            DetectedKind.INCOME -> {
+                val own = Detection.looksLikeOwnName(d, det.merchant)
+                if (own) Text("Ist das dein eigenes Konto? Dann „Vom Sparkonto“.", Modifier.padding(bottom = 8.dp), style = MaterialTheme.typography.bodyMedium, color = c.fg)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (d.settings.periodMode == PeriodMode.INCOME) Pill("Gehalt, neuer Monat", true, {
+                        Store.update { data -> Salary.startNewPeriod(Detection.ignore(data, det.id).let { x -> x.copy(detected = x.detected.map { if (it.id == det.id) it.copy(status = DetectedStatus.ACCEPTED) else it }) }, Detection.dayOf(det), det.amount) }
+                        done("Neuer Monat gestartet")
+                    })
+                    Pill("Einnahme", d.settings.periodMode != PeriodMode.INCOME && !own, { Store.update { Detection.accept(it, det.id, null).first }; done("Als Einnahme eingetragen") })
+                    Pill("Vom Sparkonto", own, {
+                        Store.update { Detection.acceptFromSavings(it, det.id).first }
+                        done(if (det.merchant.isNotBlank()) "Eingetragen. Geld von ${det.merchant} ist ab jetzt immer vom Sparkonto." else "Vom Sparkonto eingetragen")
+                    })
+                }
+            }
+            DetectedKind.FROM_SAVINGS -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Pill("Vom Sparkonto", true, { Store.update { Detection.accept(it, det.id, null).first }; done("Vom Sparkonto eingetragen") })
             }
         }
         Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -186,7 +198,9 @@ private fun DetectedCard(det: Detected, expanded: Boolean) {
                 if (det.kind != DetectedKind.CASH) {
                     Text(
                         if (det.kind == DetectedKind.INCOME) "Ist eine Ausgabe" else "Ist eine Einnahme",
-                        Modifier.clip(RoundedCornerShape(50)).clickable { Store.update { Detection.flip(it, det.id) } }.padding(8.dp),
+                        Modifier.clip(RoundedCornerShape(50)).clickable {
+                            Store.update { if (det.kind == DetectedKind.FROM_SAVINGS) Detection.notFromSavings(it, det.id) else Detection.flip(it, det.id) }
+                        }.padding(8.dp),
                         style = MaterialTheme.typography.labelLarge, color = c.primary,
                     )
                 }

@@ -142,6 +142,10 @@ fun MonthScreen(start: LocalDate? = null, openCategory: String? = null) {
                 GroupDivider()
                 ValueRow("Gespart", "− " + Money.format(sum.saved), note = "aufs Sparkonto gelegt", valueColor = c.good)
             }
+            if (sum.fromSavings > 0) {
+                GroupDivider()
+                ValueRow("Vom Ersparten", "+ " + Money.format(sum.fromSavings), note = "vom Sparkonto geholt")
+            }
             GroupDivider()
             ValueRow(
                 when { future -> "Zum Ausgeben"; sum.free >= 0 -> if (period.end.isBefore(today)) "Übrig geblieben" else "Noch frei"; else -> "Drüber" },
@@ -209,13 +213,14 @@ private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableM
     val c = C.colors
     fun key(e: Entry): String = when (e.kind) {
         EntryKind.EXPENSE, EntryKind.REFUND, EntryKind.INCOME -> e.categoryId?.takeIf { d.category(it) != null } ?: NONE
-        EntryKind.SAVING -> SAVED
+        EntryKind.SAVING, EntryKind.FROM_SAVINGS -> SAVED
         else -> CASH
     }
     // Ausgaben positiv, Einnahmen und Erstattungen negativ.
     fun value(e: Entry): Cents = when (e.kind) {
         EntryKind.INCOME -> -e.amount
         EntryKind.SAVING -> e.amount
+        EntryKind.FROM_SAVINGS -> -e.amount
         else -> Budget.spendingValue(e, cashMode) - Budget.cashFound(e, cashMode)
     }
     val prevBy = prev.groupBy(::key).mapValues { (_, es) -> es.sumOf(::value) }
@@ -225,7 +230,7 @@ private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableM
     Group {
         groups.forEachIndexed { i, (k, es, v) ->
             if (i > 0) GroupDivider()
-            val name = when (k) { NONE -> "Ohne Kategorie"; CASH -> "Bargeld"; SAVED -> "Gespart"; else -> d.category(k)?.name ?: "Ohne Kategorie" }
+            val name = when (k) { NONE -> "Ohne Kategorie"; CASH -> "Bargeld"; SAVED -> savedName(es); else -> d.category(k)?.name ?: "Ohne Kategorie" }
             val p = prevBy[k] ?: 0
             val note = listOfNotNull(
                 "${es.size} ${if (es.size == 1) "Eintrag" else "Einträge"}",
@@ -258,6 +263,13 @@ private fun CategoryList(entries: List<Entry>, prev: List<Entry>, open: MutableM
 private const val NONE = "_none"
 private const val CASH = "_cash"
 private const val SAVED = "_saved"
+
+/** Nur gespart, nur vom Ersparten geholt oder beides. */
+private fun savedName(es: List<Entry>): String = when {
+    es.all { it.kind == EntryKind.FROM_SAVINGS } -> "Vom Ersparten"
+    es.any { it.kind == EntryKind.FROM_SAVINGS } -> "Sparkonto"
+    else -> "Gespart"
+}
 
 @Composable
 private fun Arrow(t: String, enabled: Boolean = true, onClick: () -> Unit) {

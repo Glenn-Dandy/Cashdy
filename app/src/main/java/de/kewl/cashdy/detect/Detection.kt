@@ -104,6 +104,9 @@ object Detection {
             }
         }
 
+        // Geld vom eigenen Sparkonto ist keine Einnahme.
+        if (det.kind == DetectedKind.INCOME && isOwnAccount(data, det.merchant)) det = det.copy(kind = DetectedKind.FROM_SAVINGS)
+
         // 3) Abbuchung einer bekannten Fixkosten-Position (Netflix-Lastschrift o. ä.): die zählt schon.
         if (parsed.kind == DetectedKind.EXPENSE || parsed.kind == DetectedKind.INCOME) {
             val wantIncome = parsed.kind == DetectedKind.INCOME
@@ -125,14 +128,13 @@ object Detection {
             DetectedKind.INCOME -> Merchants.suggestCategory(data, det.merchant)?.takeIf { id ->
                 data.categories.any { it.id == id && it.type == de.kewl.cashdy.data.CategoryType.INCOME }
             } ?: DefaultCategories.INCOME_OTHER
-            DetectedKind.CASH -> null
+            DetectedKind.CASH, DetectedKind.FROM_SAVINGS -> null
         }
 
         // 4) Automatisch übernehmen, wenn eingeschaltet und Händler gelernt. Nicht, wenn es doppelt sein könnte.
-        if (s.autoAccept && parsed.kind == DetectedKind.EXPENSE && det.merchant.isNotBlank() &&
-            maybeDuplicate(data, det) == null &&
-            data.merchantRules.containsKey(Merchants.normalize(det.merchant))
-        ) {
+        val known = (det.kind == DetectedKind.EXPENSE && maybeDuplicate(data, det) == null &&
+            data.merchantRules.containsKey(Merchants.normalize(det.merchant))) || det.kind == DetectedKind.FROM_SAVINGS
+        if (s.autoAccept && det.merchant.isNotBlank() && known) {
             val (d2, entry) = accept(data.copy(detected = listOf(det) + data.detected), det.id, suggested, asCashWithdrawal = false)
             return d2 to DetectionResult.AutoAccepted(det.copy(status = DetectedStatus.ACCEPTED, entryId = entry?.id), entry!!)
         }
@@ -205,6 +207,7 @@ object Detection {
             DetectedKind.EXPENSE -> EntryKind.EXPENSE
             DetectedKind.INCOME -> EntryKind.INCOME
             DetectedKind.REFUND -> EntryKind.REFUND
+            DetectedKind.FROM_SAVINGS -> EntryKind.FROM_SAVINGS
             DetectedKind.CASH -> if (asCashWithdrawal) EntryKind.CASH_WITHDRAWAL else EntryKind.EXPENSE
         }
         val entry = Entry(
@@ -212,6 +215,7 @@ object Detection {
             categoryId = when (kind) {
                 EntryKind.CASH_WITHDRAWAL -> null
                 EntryKind.EXPENSE -> categoryId ?: if (det.kind == DetectedKind.CASH) DefaultCategories.CASH_UNKNOWN else DefaultCategories.OTHER
+                EntryKind.FROM_SAVINGS -> null
                 else -> categoryId
             },
             merchant = det.merchant,
@@ -234,10 +238,48 @@ object Detection {
         if (it.id != detectedId || it.status != DetectedStatus.PENDING) it
         else when (it.kind) {
             DetectedKind.EXPENSE, DetectedKind.REFUND -> it.copy(kind = DetectedKind.INCOME)
-            DetectedKind.INCOME -> it.copy(kind = DetectedKind.EXPENSE)
+            DetectedKind.INCOME, DetectedKind.FROM_SAVINGS -> it.copy(kind = DetectedKind.EXPENSE)
             DetectedKind.CASH -> it
         }
     })
+
+    /** Ist [merchant] als eigenes Konto gemerkt? */
+    fun isOwnAccount(d: AppData, merchant: String): Boolean =
+        merchant.isNotBlank() && Merchants.normalize(merchant) in d.settings.ownAccounts
+
+    /**
+     * Steht der eigene Vorname im Absender? Dann könnte es eine Umbuchung vom eigenen Konto sein.
+     * Nur ein Hinweis zum Nachfragen, nie automatisch: Andere heißen auch so.
+     */
+    fun looksLikeOwnName(d: AppData, merchant: String): Boolean {
+        val name = d.settings.name.trim().lowercase().split(Regex("\\s+")).firstOrNull()?.takeIf { it.length >= 3 } ?: return false
+        return merchant.lowercase().split(Regex("[^\\p{L}]+")).any { it == name }
+    }
+
+    /**
+     * Erkannte Einnahme ist Geld vom eigenen Sparkonto: als „vom Ersparten“ eintragen und den
+     * Absender merken, damit es beim nächsten Mal gleich richtig erkannt wird.
+     */
+    fun acceptFromSavings(d: AppData, detectedId: String): Pair<AppData, Entry?> {
+        val det = d.detected.firstOrNull { it.id == detectedId && it.status == DetectedStatus.PENDING } ?: return d to null
+        val marked = d.copy(detected = d.detected.map { if (it.id == detectedId) it.copy(kind = DetectedKind.FROM_SAVINGS) else it })
+        val (out, entry) = accept(marked, detectedId, null)
+        return rememberOwnAccount(out, det.merchant, true) to entry
+    }
+
+    /** Doch kein eigenes Konto: wieder normale Einnahme, Absender vergessen. */
+    fun notFromSavings(d: AppData, detectedId: String): AppData {
+        val det = d.detected.firstOrNull { it.id == detectedId && it.status == DetectedStatus.PENDING } ?: return d
+        val out = d.copy(detected = d.detected.map { if (it.id == detectedId) it.copy(kind = DetectedKind.INCOME) else it })
+        return rememberOwnAccount(out, det.merchant, false)
+    }
+
+    /** Absender als eigenes Konto merken oder wieder vergessen. */
+    fun rememberOwnAccount(d: AppData, merchant: String, own: Boolean): AppData {
+        val key = Merchants.normalize(merchant).ifBlank { return d }
+        val now = if (own) d.settings.ownAccounts + key else d.settings.ownAccounts - key
+        return if (now == d.settings.ownAccounts) d else d.copy(settings = d.settings.copy(ownAccounts = now))
+    }
 
     fun ignore(d: AppData, detectedId: String): AppData =
         d.copy(detected = d.detected.map { if (it.id == detectedId) it.copy(status = DetectedStatus.IGNORED) else it })

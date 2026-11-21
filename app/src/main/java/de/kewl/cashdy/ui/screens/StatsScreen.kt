@@ -139,7 +139,7 @@ fun StatsScreen() {
 
         FixedCard(d, today)
 
-        val saved = used.sumOf { it.sum.saved }
+        val saved = used.sumOf { it.sum.saved - it.sum.fromSavings }
         if (saved > 0) {
             StatCard {
                 Text("Gespart", style = MaterialTheme.typography.titleMedium, color = c.fg)
@@ -151,7 +151,7 @@ fun StatsScreen() {
                         Text(if (plan != null) "$year aufs Sparkonto gelegt" else "in diesen Monaten aufs Sparkonto gelegt", style = MaterialTheme.typography.bodySmall, color = c.muted)
                     }
                 }
-                ValueBars(used.map { it.sum.saved }, used.map { abbr(it.period, short = used.size > 6) }, c.good)
+                ValueBars(used.map { (it.sum.saved - it.sum.fromSavings).coerceAtLeast(0) }, used.map { abbr(it.period, short = used.size > 6) }, c.good)
             }
         }
 

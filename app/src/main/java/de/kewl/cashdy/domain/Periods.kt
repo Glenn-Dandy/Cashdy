@@ -1,5 +1,6 @@
 package de.kewl.cashdy.domain
 
+import de.kewl.cashdy.data.PeriodChange
 import de.kewl.cashdy.data.PeriodMode
 import de.kewl.cashdy.data.Settings
 import java.time.DayOfWeek
@@ -38,10 +39,33 @@ data class Period(val start: LocalDate, val end: LocalDate, val estimatedEnd: Bo
 
 object Periods {
 
-    fun periodFor(date: LocalDate, s: Settings): Period = when (s.periodMode) {
+    fun periodFor(date: LocalDate, s: Settings): Period {
+        if (s.periodChanges.isEmpty()) return byRule(date, s.periodMode, s.periodDay, s.shiftWeekend, s)
+        // Wurde der Monatsanfang umgestellt, gilt vor jedem Wechsel die alte Regel. Der Monat,
+        // in dem gewechselt wurde, endet am Tag davor, der neue beginnt genau am Wechseltag.
+        val changes = s.periodChanges.sortedBy { it.from }
+        val i = changes.indexOfFirst { date.isBefore(it.from) }
+        val rule = if (i < 0) null else changes[i]
+        val p = if (rule == null) byRule(date, s.periodMode, s.periodDay, s.shiftWeekend, s)
+            else byRule(date, rule.mode, rule.day, rule.shiftWeekend, s)
+        val segStart = if (i == 0) null else changes[(if (i < 0) changes.size else i) - 1].from
+        val segEnd = rule?.from?.minusDays(1)
+        val start = if (segStart != null && p.start.isBefore(segStart)) segStart else p.start
+        val end = if (segEnd != null && p.end.isAfter(segEnd)) segEnd else p.end
+        return if (start == p.start && end == p.end) p else Period(start, end, p.estimatedEnd && end == p.end)
+    }
+
+    private fun byRule(date: LocalDate, mode: PeriodMode, day: Int, shiftWeekend: Boolean, s: Settings): Period = when (mode) {
         PeriodMode.CALENDAR -> calendar(date)
-        PeriodMode.FIXED_DAY -> fixedDay(date, s.periodDay, s.shiftWeekend)
+        PeriodMode.FIXED_DAY -> fixedDay(date, day, shiftWeekend)
         PeriodMode.INCOME -> income(date, s)
+    }
+
+    /** Ab [from] beginnt der Monat am [day]. Was davor war, bleibt eingeteilt wie bisher. */
+    fun changeStart(s: Settings, from: LocalDate, day: Int): Settings {
+        val kept = s.periodChanges.filter { it.from.isBefore(from) }
+        val old = PeriodChange(from, s.periodMode, s.periodDay, s.shiftWeekend)
+        return s.copy(periodChanges = kept + old, periodMode = PeriodMode.FIXED_DAY, periodDay = day)
     }
 
     fun previous(p: Period, s: Settings): Period = periodFor(p.start.minusDays(1), s)

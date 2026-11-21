@@ -159,4 +159,28 @@ class DetectionTest {
         // Und zurück.
         assertEquals(DetectedKind.EXPENSE, Detection.flip(d2, r.detected.id).detected.first().kind)
     }
+    @Test fun transferFromOwnSavingsIsNotIncome() {
+        val base = AppData(settings = Settings(name = "Anna", autoAccept = true))
+        val text = "+400,00 Euro von Anna Beispiel"
+        val (d1, r) = Detection.handle(base, dkbNew, "Umsatz gebucht (*1234)", text, t0)
+        r as DetectionResult.Pending
+        assertEquals(DetectedKind.INCOME, r.detected.kind)
+        // Eigener Vorname im Absender: nur fragen, nichts automatisch.
+        assertEquals(true, Detection.looksLikeOwnName(d1, r.detected.merchant))
+        assertEquals(false, Detection.looksLikeOwnName(d1, "Johanna Muster"))
+        val (d2, e) = Detection.acceptFromSavings(d1, r.detected.id)
+        assertEquals(EntryKind.FROM_SAVINGS, e!!.kind)
+        assertEquals(null, e.categoryId)
+        // Beim nächsten Mal gleich richtig, mit „automatisch übernehmen“ ohne Nachfrage.
+        val (d3, r2) = Detection.handle(d2, dkbNew, "Umsatz gebucht (*1234)", "+250,00 Euro von Anna Beispiel", t0 + 86_400_000L)
+        r2 as DetectionResult.AutoAccepted
+        assertEquals(EntryKind.FROM_SAVINGS, r2.entry.kind)
+        // Doch kein eigenes Konto: vergessen.
+        val (d4, r3) = Detection.handle(d3.copy(settings = d3.settings.copy(autoAccept = false)), dkbNew, "Umsatz gebucht (*1234)", "+50,00 Euro von Anna Beispiel", t0 + 2 * 86_400_000L)
+        r3 as DetectionResult.Pending
+        assertEquals(DetectedKind.FROM_SAVINGS, r3.detected.kind)
+        val d5 = Detection.notFromSavings(d4, r3.detected.id)
+        assertEquals(DetectedKind.INCOME, d5.detected.first { it.id == r3.detected.id }.kind)
+        assertEquals(emptySet<String>(), d5.settings.ownAccounts)
+    }
 }

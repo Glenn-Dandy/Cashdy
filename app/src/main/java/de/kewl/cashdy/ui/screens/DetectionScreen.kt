@@ -179,4 +179,5 @@ private fun kindLabel(k: DetectedKind) = when (k) {
     DetectedKind.CASH -> "Bargeld"
     DetectedKind.INCOME -> "Eingang"
     DetectedKind.REFUND -> "Erstattung"
+    DetectedKind.FROM_SAVINGS -> "Vom Sparkonto"
 }

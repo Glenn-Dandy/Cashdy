@@ -53,6 +53,8 @@ enum class EntryKind {
     REFUND,
     /** Aufs Sparkonto gelegt. Geht von „Noch frei“ ab, ist aber keine Ausgabe. */
     SAVING,
+    /** Vom Sparkonto geholt. Keine Einnahme, kommt aber zu „Noch frei“ dazu. Gegenstück zu [SAVING]. */
+    FROM_SAVINGS,
 }
 
 @Serializable
@@ -102,7 +104,7 @@ data class Recurring(
 )
 
 @Serializable
-enum class DetectedKind { EXPENSE, CASH, INCOME, REFUND }
+enum class DetectedKind { EXPENSE, CASH, INCOME, REFUND, FROM_SAVINGS }
 
 @Serializable
 enum class DetectedStatus { PENDING, ACCEPTED, IGNORED, MERGED }
@@ -134,6 +136,13 @@ enum class PeriodMode { CALENDAR, FIXED_DAY, INCOME }
 @Serializable
 enum class CashMode { WALLET, SIMPLE }
 
+/**
+ * Der Monatsanfang wurde ab [from] umgestellt. Davor galten [mode], [day] und [shiftWeekend].
+ * So bleiben alte Monate, wie sie waren, statt mit dem neuen Tag neu zerschnitten zu werden.
+ */
+@Serializable
+data class PeriodChange(val from: Day, val mode: PeriodMode, val day: Int, val shiftWeekend: Boolean)
+
 /** Sortierung auf "Fest": nach Kategorie zusammengefasst, nach Name oder nach nächster Abbuchung. */
 @Serializable
 enum class FixedView { CATEGORY, NAME, DUE }
@@ -155,6 +164,8 @@ data class Settings(
     val shiftWeekend: Boolean = true,
     /** Bestätigte Gehaltseingänge = Monatsanfänge im Modus INCOME. */
     val periodStarts: List<Day> = emptyList(),
+    /** Frühere Monatsanfänge, aufsteigend. Ab dem letzten [PeriodChange.from] gelten die Werte oben. */
+    val periodChanges: List<PeriodChange> = emptyList(),
     val cashMode: CashMode = CashMode.WALLET,
     val remindInactiveDays: Int = 3,
     val remindDue: Boolean = true,
@@ -198,6 +209,8 @@ data class Settings(
     /** Statistik: true = ganzes Jahr, false = die letzten 6 Monate. */
     val statsYear: Boolean = false,
     val monthView: MonthView = MonthView.CATEGORY,
+    /** Absender (normalisiert), die ein eigenes Konto sind: Geld von dort ist „vom Ersparten“. */
+    val ownAccounts: Set<String> = emptySet(),
 ) {
     companion object {
         val DEFAULT_WATCHED = setOf(

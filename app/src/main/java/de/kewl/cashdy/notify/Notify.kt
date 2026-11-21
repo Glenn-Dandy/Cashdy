@@ -87,6 +87,7 @@ object Notify {
             DetectedKind.INCOME -> "💰 $amount eingegangen" + (if (det.merchant.isNotBlank()) " von ${det.merchant}" else "") to
                 (if (d.settings.periodMode == PeriodMode.INCOME) "Ist das dein Gehalt? Dann starte ich einen neuen Monat." else "Als Einnahme eintragen?")
             DetectedKind.REFUND -> "↩️ $amount zurück$where" to "Als Erstattung eintragen?"
+            DetectedKind.FROM_SAVINGS -> "🐷 $amount vom Sparkonto" to "Eintragen? Zählt nicht als Einnahme."
         }
         val warn = Detection.maybeDuplicate(d, det)
         val body = if (warn != null) "⚠️ $warn" else text
@@ -113,6 +114,11 @@ object Notify {
                     b.addAction(0, "💰 Gehalt, neuer Monat", action(ctx, ActionReceiver.SALARY, det.id))
                 }
                 b.addAction(0, "Einnahme", action(ctx, ActionReceiver.ACCEPT, det.id, suggestedCategory))
+                if (Detection.looksLikeOwnName(d, det.merchant)) b.addAction(0, "Vom Sparkonto", action(ctx, ActionReceiver.FROM_SAVINGS, det.id))
+                b.addAction(0, "Nö", action(ctx, ActionReceiver.IGNORE, det.id))
+            }
+            DetectedKind.FROM_SAVINGS -> {
+                b.addAction(0, "🐷 Vom Sparkonto", action(ctx, ActionReceiver.ACCEPT, det.id))
                 b.addAction(0, "Nö", action(ctx, ActionReceiver.IGNORE, det.id))
             }
         }
@@ -123,7 +129,7 @@ object Notify {
         val cat = Store.current.category(entry.categoryId)
         val b = base(ctx, CH_DETECTED)
             .setContentTitle("✅ ${Money.format(entry.amount)} bei ${entry.merchant} eingetragen")
-            .setContentText("${cat?.emoji ?: ""} ${cat?.name ?: ""}, automatisch erkannt")
+            .setContentText(if (entry.kind == de.kewl.cashdy.data.EntryKind.FROM_SAVINGS) "🐷 Vom Sparkonto, automatisch erkannt" else "${cat?.emoji ?: ""} ${cat?.name ?: ""}, automatisch erkannt")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(openApp(ctx, "home"))
             .addAction(0, "Rückgängig", action(ctx, ActionReceiver.UNDO, det.id, entry.id))
