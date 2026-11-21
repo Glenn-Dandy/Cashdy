@@ -1,0 +1,5 @@
+Cashdy 1.1.3: Sparkonto und Monatsanfang
+
+- Geld vom eigenen Sparkonto zählt nicht mehr als Einnahme, deckt aber deine Ausgaben.
+- Cashdy merkt sich dein eigenes Konto und trägt Umbuchungen künftig gleich richtig ein.
+- Kommt dein Hauptgeld an einem anderen Tag, fragt Cashdy, ob der Monat ab dann dort anfängt. Alte Monate bleiben, wie sie waren.

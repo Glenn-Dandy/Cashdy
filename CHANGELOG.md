@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.3
+
+Cashdy 1.1.3: Sparkonto und Monatsanfang.
+
+- **Vom Sparkonto:** Geld vom eigenen Sparkonto ist keine Einnahme mehr. Es deckt trotzdem deine Ausgaben, „Noch frei“ bleibt gleich. Im Plus-Menü unter „Sparen“ (Aufs Sparkonto oder Vom Sparkonto), im Posteingang als eigener Knopf. Bei „Gespart“ im Jahr wird es abgezogen.
+- **Eigenes Konto merken:** Steht dein Vorname im Absender, fragt Cashdy, ob das dein eigenes Konto ist. Einmal „Vom Sparkonto“ gewählt, werden Eingänge von dort künftig gleich richtig eingetragen. „Ist eine Einnahme“ vergisst den Absender wieder.
+- **Monat ab dem Hauptgeld:** Kommt deine wichtigste feste Einnahme an einem anderen Tag als dein Monatsanfang (zum Beispiel Krankengeld statt Gehalt), fragt Cashdy einmal, ob der Monat ab dann dort anfangen soll. Der laufende Monat endet am Tag davor, was übrig ist, geht als Übertrag mit. Alte Monate bleiben, wie sie waren.
+
 ## 1.1.2
 
 Cashdy 1.1.2: Ordnung auf „Fest“ und weniger Text.
